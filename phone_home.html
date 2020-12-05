@@ -1,39 +1,37 @@
-<!doctype html>
-<!--
-https://github.com/rauchg/chat-example
--->
-<html>
-  <head>
-    <title>Phone V. Phone</title>
 
-  </head>
-  
-  <style>
-	body{
-		margin:0;
-	}
-	#container{
-		position:fixed;
-	}
-	</style>
-  <body>
-  <!-- NOTE! nodejs is being served locally to test so files have no path, all directory locations are included with node package 'serve-static' -->
-		<script src="/js/lib/three.js/build/three.js"></script>
-		<script src="/node_modules/socket.io/client-dist/socket.io.js"></script>	
-        <script src="ammo.js"></script>
-        <script src="https://docs.opencv.org/3.4.0/opencv.js"> </script>
-		<!-- GAMEPAD GUI -->
-		<!--<script src="ABUDLR.js"></script> -->
-		<!-- PLAYER OBJECTS -->
-		<!--<script src="PlayerObjectConstructor.js"></script> -->
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>Phone vs Phone</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<style>
+			body {
+				font-family: Monospace;
+				background-color: #f0f0f0;
+				margin: 0px;
+				overflow: hidden;
+			}
+
+			#oldie { background-color: #ddd !important }
+		</style>
+	</head>
+	<body>
+		<script src="/lib/three.js/build/three.js"></script>
+		<script src="/lib/three.js/examples/js/controls/TrackballControls.js"></script>
+		<script src="/lib/three.js/examples/js/controls/OrbitControls.js"></script>
+		<script src="/lib/three.js/examples/js/Detector.js"></script>
+		<script src="/lib/ammo.js"></script>
+		<script src="/lib/socket.io.min.js"></script>
+
+		<!-- <link rel="stylesheet" type="text/css" href="../static/css/voxelPaint.css"> -->
 		
 		
-	<!-- Now the good stuff -->
-  <!-- CONTAINER WILL HOLD OUR CANVAS -->
-		<div id="container">
+		<!-- CONTAINER WILL HOLD OUR CANVAS -->
+		<div id="container" style="position: relative;">
 		</div>
 
-		<script src="engine.js"></script><!-- KEEP AT BOTTOM -->
-		
-  </body>
+		<script src="/js/engine.js"></script><!-- KEEP AT BOTTOM -->
+
+	</body>
 </html>
