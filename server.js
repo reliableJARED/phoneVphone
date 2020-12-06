@@ -26,11 +26,14 @@ app.use(serveStatic(__dirname+'/'));
 app.use(serveStatic(__dirname + '/resources/images/'));
 app.use(serveStatic(__dirname + '/js'));
 app.use(serveStatic(__dirname + '/js/lib/'));
-app.use(serveStatic(__dirname + '/js/libs/three.js/build/'));
+app.use(serveStatic(__dirname + '/js/libs/three.js/build/three.js'));
+app.use(serveStatic(__dirname + '/js/lib/ammo.js'));
+app.use(serveStatic(__dirname + '/js/lib/socket.io.min.js'));
+
 
 //serve HTML to initial get request
 app.get('/', function(request, response){
-	response.sendFile(__dirname+'phone_home.html');
+	response.sendFile(__dirname+'/phone_home.html');
 });
 
 
