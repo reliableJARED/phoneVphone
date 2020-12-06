@@ -68,7 +68,7 @@ function createVideoElement(stream){
     console.log('creating a video element, assign to global VIDEO_ELEMENT ')
 //create html5 video element to stream our local camera Video feed
 VIDEO_ELEMENT = document.createElement("video");//create an HTML5 video element
-//VIDEO_ELEMENT.setAttribute.autoplay = true;
+VIDEO_ELEMENT.autoplay = true;
 //add the element to our dom
 console.log(stream);
 //this will be in a promise chain.  return the new element and the stream that came in.
@@ -112,7 +112,7 @@ function initUserCamFeed(){
         console.log(stream);
 		console.log('adding .getuserMedia stream to video element');
         VIDEO_ELEMENT.srcObject = stream;//set our video element souce to the webcam feed
-        VIDEO_ELEMENT.onloadedmetadata = function(e) { VIDEO_ELEMENT.play(); };
+        //VIDEO_ELEMENT.onloadedmetadata = function(e) { VIDEO_ELEMENT.play(); };
 	}
 }
 
@@ -481,9 +481,9 @@ function clickShootCube (event){
               cube.userData.physicsBody.applyCentralImpulse(new Ammo.btVector3( thrustX,0,thrustZ*Zquad ));
     
     
-    //destroy the shot in 5000 miliseconds (5 seconds)
+    //destroy the shot in x miliseconds (1000 =1 seconds)
     //removes it from the world so we don't litter with bullets
-    destructionTimer(cube,5000);	
+    destructionTimer(cube,2000);	
     
 }
 
@@ -529,9 +529,9 @@ function createPlayerCube(){
 		PlayerCube.userData.TopSpeed = 25;
 		
 		//force that bullets are shot at
-		PlayerCube.userData.shotFireForce = 100;
+		PlayerCube.userData.shotFireForce = 50;
 		
-		//IMPORTANT!
+		//IMPORTANT! 
 		//hardcode prevention of Z and X rotation. Can only rotate around Y
 	//	PlayerCube.userData.physicsBody.setAngularFactor(new Ammo.btVector3(0,1,0));
 	//	PlayerCube.userData.physicsBody.setLinearFactor(new Ammo.btVector3(1,1,1));
