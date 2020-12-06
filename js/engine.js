@@ -136,7 +136,7 @@ PerspectiveCAMERA( fov, aspect, near, far )
     const far = 500;
     let CAM_X = 0;
     let CAM_Y = 0; 
-    let CAM_Z = -7;//Set the initial perspective for the user
+    let CAM_Z = -12;//Set the initial perspective for the user
 
    //CAMERA = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 0.2, 2000 );	
    CAMERA = new THREE.PerspectiveCamera( fov,aspect,near,far );	 
@@ -204,7 +204,7 @@ function createObjects() {
 		
 		//add to our physics object holder
 		RIGID_BODIES.push( cube );
-		
+		g
 		//add cube to graphics world
 		SCENE.add( cube );
 		
