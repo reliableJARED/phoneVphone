@@ -143,8 +143,8 @@ PerspectiveCAMERA( fov, aspect, near, far )
     const far = 500;
     //Set the initial perspective for the user
     let CAM_X = 0;
-    let CAM_Y = 1; 
-    let CAM_Z = -10;
+    let CAM_Y = 3; 
+    let CAM_Z = -7;
 
    //CAMERA = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 0.2, 2000 );	
    CAMERA = new THREE.PerspectiveCamera( fov,aspect,near,far );	 
@@ -188,7 +188,7 @@ PerspectiveCAMERA( fov, aspect, near, far )
 		VIDEO_CANVAS_CTX = backgroundImage.getContext("2d");//set drawing context as a global
 		backgroundImage.width = window.innerWidth;
 		//add 1 to force auto scroll.  this way the URL input bar goes away on iOS safari
-		backgroundImage.height = window.innerHeight+1;
+		backgroundImage.height = window.innerHeight;
 		VIDEO_CANVAS_CTX.drawImage(VIDEO_ELEMENT,0,0);
 		backgroundImage.style.position = 'fixed';
 		//keep our background at lowest level
@@ -197,7 +197,7 @@ PerspectiveCAMERA( fov, aspect, near, far )
 }
 
 function createObjects() {
-        
+		
         // Create a cube for the player
         PlayerCube = createPlayerCube();
         
@@ -505,7 +505,7 @@ function clickShootCube (event){
     //const material = new THREE.MeshBasicMaterial({ color: 0xff0000} );
 
     const sphere = createGaphicPhysicSphere(radius,mass,pos,quat,material);
-    console.log(sphere)
+    //onsole.log(sphere)
     
     /*DO NOT ENABLE cast shadow for these blocks system performance will be terrible!
     It's ok if they receive though.*/
@@ -545,7 +545,7 @@ function clickShootCube (event){
     
     //destroy the shot in x miliseconds (1000 =1 seconds)
     //removes it from the world so we don't litter with bullets
-	destructionTimer(sphere,2000);	
+	destructionTimer(sphere,2500);	
 	
 	//////// SOUND
 	console.log(POP_SOUND);
@@ -570,6 +570,7 @@ function createPlayerCube(){
         //var material = new THREE.MeshPhongMaterial( { color: "rgba(33%, 34%, 33%,256)", vertexColors: THREE.FaceColors,transparent:true} );
         const material = new THREE.MeshBasicMaterial( { color: "rgba(33%, 34%, 33%,256)", vertexColors: THREE.FaceColors,transparent:true, opacity:0.1} );
 
+		/// return from createGrapicPhysicBox() joint physics/graphics object where Object.userData.physicsBody is a Ammo.btRigidBody
         PlayerCube = createGrapicPhysicBox(x,y,z,mass,pos,quat,material,true);//bool at the end means random color for each cube face
         
         //no shadows
@@ -596,7 +597,17 @@ function createPlayerCube(){
 		
 		//force that bullets are shot at
 		PlayerCube.userData.shotFireForce = 80;
-		
+
+		//// IMPORTANT to allow user movement
+		/*
+		https://medium.com/@bluemagnificent/moving-objects-in-javascript-3d-physics-using-ammo-js-and-three-js-6e39eff6d9e5
+		make the player a KINEMATIC RIGID BODY
+		*/
+		const FLAGS = { CF_KINEMATIC_OBJECT: 2 };
+		const STATE = { DISABLE_DEACTIVATION : 4 };
+		PlayerCube.userData.physicsBody.setActivationState(STATE.DISABLE_DEACTIVATION);
+		PlayerCube.userData.physicsBody.setCollisionFlags(FLAGS.CF_KINEMATIC_OBJECT);
+
 		//IMPORTANT! 
 		//hardcode prevention of Z and X rotation. Can only rotate around Y
 	//	PlayerCube.userData.physicsBody.setAngularFactor(new Ammo.btVector3(0,1,0));
@@ -685,7 +696,13 @@ function destroyObj(obj){
 	
 }
 
+function yaw(){
+	//update player yaw (Left/rigth rotation) movement
+}
 
+function pitch(){
+	//update player pitch (up down rotation) movement
+}
 
 //FIRE A SHOUT WITH 
 window.addEventListener('touchstart',clickShootCube,false);
@@ -696,4 +713,4 @@ document.addEventListener("keydown", clickShootCube, false);
  * there was a +1 on the video element that should make it so the page is larger
  * than the view port so a scroll will work
  */
-window.scrollTo(0,1);
+window.scrollTo(0,10);
