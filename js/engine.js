@@ -134,9 +134,10 @@ PerspectiveCAMERA( fov, aspect, near, far )
     const aspect = (window.innerWidth / window.innerHeight);
     const near = 0.1;
     const far = 500;
+    //Set the initial perspective for the user
     let CAM_X = 0;
-    let CAM_Y = 0; 
-    let CAM_Z = -12;//Set the initial perspective for the user
+    let CAM_Y = 1; 
+    let CAM_Z = -12;
 
    //CAMERA = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 0.2, 2000 );	
    CAMERA = new THREE.PerspectiveCamera( fov,aspect,near,far );	 
@@ -426,9 +427,9 @@ function clickShootCube (event){
     //event should be a 'touchstart' event or key press
     event.preventDefault();
     console.log('fire')
-    var x=.5;//meters
-    var y=.5;//meters
-    var z=.5;//meters
+    var x=1;//meters
+    var y=1;//meters
+    var z=3;//meters
     var mass = 1;//kg
     
 

@@ -1,13 +1,15 @@
-var app = require('express')();
+const express = require("express");
+
+const app = express();
 
 //https://www.npmjs.com/package/ammo-node
 const Ammo = require('ammo-node');//physics
 
 //Express initializes app to be a function handler that you can supply to an HTTP server
-var http = require('http').Server(app);
+const http = require('http').Server(app);
 
 //A server that integrates with (or mounts on) the Node.JS HTTP Server: socket.io
-var io = require('socket.io')(http);
+const io = require('socket.io')(http);
 
 var port = process.env.PORT || 5000; 
 
@@ -17,6 +19,9 @@ var port = process.env.PORT || 5000;
 
 //required for serving locally when testing
 var serveStatic = require('serve-static');
+
+app.use('/',express.static(__dirname));//serve the main dir so the /public dir will work
+
 app.use(serveStatic(__dirname+'/'));
 app.use(serveStatic(__dirname + '/resources/images/'));
 app.use(serveStatic(__dirname + '/js'));
