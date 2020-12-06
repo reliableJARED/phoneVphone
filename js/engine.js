@@ -69,7 +69,7 @@ function createVideoElement(stream){
 //create html5 video element to stream our local camera Video feed
 VIDEO_ELEMENT = document.createElement("video");//create an HTML5 video element
 VIDEO_ELEMENT.autoplay = true;
-remoteVideo.setAttribute('playsinline','');//this only way to get .play to work on iphone
+VIDEO_ELEMENT.setAttribute('playsinline','');//this only way to get .play to work on iphone
 //add the element to our dom
 console.log(stream);
 //this will be in a promise chain.  return the new element and the stream that came in.
