@@ -30,7 +30,7 @@ app.use(serveStatic(__dirname + '/js/libs/three.js/build/'));
 
 //serve HTML to initial get request
 app.get('/', function(request, response){
-	response.sendFile(__dirname+'/phone_home.html');
+	response.sendFile(__dirname+'phone_home.html');
 });
 
 
