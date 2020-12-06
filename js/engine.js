@@ -112,6 +112,7 @@ function initUserCamFeed(){
         console.log(stream);
 		console.log('adding .getuserMedia stream to video element');
         VIDEO_ELEMENT.srcObject = stream;//set our video element souce to the webcam feed
+        VIDEO_ELEMENT.play();
         //VIDEO_ELEMENT.onloadedmetadata = function(e) { VIDEO_ELEMENT.play(); };
 	}
 }
