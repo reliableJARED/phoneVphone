@@ -27,9 +27,6 @@ var CONTROLS;
 //RAYCASTER  is a project that renders a 3D world based on a 2D map
 var RAYCASTER = new THREE.Raycaster();//http://threejs.org/docs/api/core/RAYCASTER.html
 var backgroundImage, VIDEO_CANVAS_CTX;// lower layer canvas that has video feed
-var CAM_X =0;
-var CAM_Y = 5; 
-var CAM_Z = -20;//Set the initial perspective for the user
 
 //GLOBAL for the HTML5 video element holding our local video feed
 var VIDEO_ELEMENT = null;
@@ -62,8 +59,6 @@ function init() {
 		createObjects();
 
         initInput();
-        
-        PlayerCube = createPlayerCube() 
 
 }
 
@@ -131,10 +126,20 @@ PerspectiveCAMERA( fov, aspect, near, far )
 		fov — CAMERA frustum vertical field of view.
 		aspect — CAMERA frustum aspect ratio.
 		near — CAMERA frustum near plane.
-		far — CAMERA frustum far plane.
+        far — CAMERA frustum far plane.
 */  
-//http://threejs.org/docs/api/CAMERAs/PerspectiveCAMERA.html 
-   CAMERA = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 0.2, 2000 );	
+//https://threejs.org/docs/#api/en/cameras/PerspectiveCamera
+// GOOD SITE TO SEE HOW CAMERA VIEW CHANGES //// https://threejsfundamentals.org/threejs/lessons/threejs-cameras.html
+    const fov = 60;
+    const aspect = (window.innerWidth / window.innerHeight);
+    const near = 0.1;
+    const far = 500;
+    let CAM_X = 0;
+    let CAM_Y = 0; 
+    let CAM_Z = -7;//Set the initial perspective for the user
+
+   //CAMERA = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 0.2, 2000 );	
+   CAMERA = new THREE.PerspectiveCamera( fov,aspect,near,far );	 
    //mess around with these parameters to adjust CAMERA perspective view point
     CAMERA.position.x = CAM_X;
 	CAMERA.position.y = CAM_Y;
@@ -180,13 +185,17 @@ PerspectiveCAMERA( fov, aspect, near, far )
 }
 
 function createObjects() {
-		
+        
+        // Create a cube for the player
+        PlayerCube = createPlayerCube();
+        
+        
 		//http://threejs.org/docs/api/math/Vector3.html
 		var pos = new THREE.Vector3(0,50,0);//location in 3D space
 		
 		//http://threejs.org/docs/api/math/Quaternion.html
 		var quat = new THREE.Quaternion();//rotation/orientation in 3D space.  default is none, (0,0,0,1);
-		
+		/*
         //create a graphic and physic component for our cube
         let length = 10;
         let height = 1;
@@ -201,14 +210,13 @@ function createObjects() {
 		
 		//add physics portion of cube to world
 		PHYSICS_WORLD.addRigidBody( cube.userData.physicsBody );
-		
-		/*
-		INVISIBLE GROUND
 		*/
+
+		///INVISIBLE GROUND
 		//change and reuse pos for the ground		
-		pos.set( 0, - 10, 0 );
+		pos.set( 0, 0, 0 );//-y so it's under objects
 		//note arg 4 is mass, set to 0 so that ground is static object
-		var ground = createTransparentObject(20,1,20,0,pos,quat)
+		var ground = createTransparentObject(2000,1,2000,0,pos,quat)
 		PHYSICS_WORLD.addRigidBody( ground);
 }
 
@@ -363,28 +371,28 @@ number of simulation steps by passing a maximum value as second argument*/
 PHYSICS_WORLD.stepSimulation( deltaTime,10);
 
 // Update rigid bodies
-for ( var i = 0; i < RIGID_BODIES.length; i++ ) {
-	var objThree = RIGID_BODIES[ i ];//graphic component
-	var objPhys = objThree.userData.physicsBody;//physics component
+for ( let i = 0; i < RIGID_BODIES.length; i++ ) {
+	let objThree = RIGID_BODIES[ i ];//graphic component
+	let objPhys = objThree.userData.physicsBody;//physics component
 	
 	//Motion states for objects communicate movement caused by forces in the physics simulation.  use this info to change our graphics
-	var ms = objPhys.getMotionState();
+	let ms = objPhys.getMotionState();
 	
 	//bullet uses motionstates to aliviate looping through many world objects.  if there has been no change due too physical forces there will be no motion.  Also, objects can go into a 'sleep' mode.  If a body doesn't move due too force for about 2 seconds it won't be able to move again unless it collides with a body that is in motion. 
 	
 		if ( ms ) {
-		//Bullet calls getWorldTransform with a reference to the variable it wants you to fill with transform information
-		ms.getWorldTransform( TRANSFORM_AUX1 );//note: TRANSFORM_AUX1 =  Ammo.btTransform();
-		
-		//get the physical location of our object
-		var p = TRANSFORM_AUX1.getOrigin();
-		//get the physical orientation of our object
-		var q = TRANSFORM_AUX1.getRotation();
-		
-		//update the graphic of our object with the physical location
-		objThree.position.set( p.x(), p.y(), p.z() );
-		//update the graphic of our object with the physical orientation/rotation
-		objThree.quaternion.set( q.x(), q.y(), q.z(), q.w() );
+            //Bullet calls getWorldTransform with a reference to the variable it wants you to fill with transform information
+            ms.getWorldTransform( TRANSFORM_AUX1 );//note: TRANSFORM_AUX1 =  Ammo.btTransform();
+            
+            //get the physical location of our object
+            var p = TRANSFORM_AUX1.getOrigin();
+            //get the physical orientation of our object
+            var q = TRANSFORM_AUX1.getRotation();
+            
+            //update the graphic of our object with the physical location
+            objThree.position.set( p.x(), p.y(), p.z() );
+            //update the graphic of our object with the physical orientation/rotation
+            objThree.quaternion.set( q.x(), q.y(), q.z(), q.w() );
 				};
 	};
 				
@@ -421,7 +429,7 @@ function clickShootCube (event){
     var x=.5;//meters
     var y=.5;//meters
     var z=.5;//meters
-    var mass = 10;//kg
+    var mass = 1;//kg
     
 
     var pos =  PlayerCube.position;
@@ -430,7 +438,9 @@ function clickShootCube (event){
     var quat = new THREE.Quaternion();
     
     //assign random color when creating the new mesh
-    var material = new THREE.MeshPhongMaterial({ color: Math.random() * 0xffffff } );
+    //const material = new THREE.MeshPhongMaterial({ color: Math.random() * 0xffffff } );
+
+    const material = new THREE.MeshBasicMaterial({ color: 0xff0000} );
 
     var cube = createGrapicPhysicBox(x,y,z,mass,pos,quat,material);
     console.log(cube)
@@ -438,7 +448,7 @@ function clickShootCube (event){
     /*DO NOT ENABLE cast shadow for these blocks system performance will be terrible!
     It's ok if they receive though.*/
 //	cube.castShadow = true;
-    cube.receiveShadow = true;
+    //cube.receiveShadow = true;
     
     //////////////// ADD THIS - see git repo game1  https://github.com/reliableJARED/WebGL/blob/gh-pages/static/js/game1.js#L563
     //weaker then our main object
@@ -446,8 +456,8 @@ function clickShootCube (event){
             
     //add our cube to our array, scene and physics world.
     RIGID_BODIES.push(cube);
-    SCENE.add( cube );
-    PHYSICS_WORLD.addRigidBody( cube.userData.physicsBody );	
+    SCENE.add( cube );//Graphics add
+    PHYSICS_WORLD.addRigidBody( cube.userData.physicsBody );// Physics add	
     /*
     TODO:
     add the current speed/direction of PlayerCube to the shot
@@ -484,13 +494,15 @@ function createPlayerCube(){
 		var x=2;//meters
 		var y=2;//meters
 		var z=2;//meters
-		var mass = 10;//kg
-		var pos = new THREE.Vector3(-1000,10,0);	
+		var mass = 0;// kg -- BUT if 0 will have infinity mass and not move or be affected by gravity
+		var pos = new THREE.Vector3(0,0,0);	
 		var quat = new THREE.Quaternion();
 		
 		//create a graphic and physic component for our PlayerCube
 		//NOTE! pass vertexColors because each cube face will be random color
-		var material = new THREE.MeshPhongMaterial( { color: "rgb(34%, 34%, 33%)", vertexColors: THREE.FaceColors} );
+        //var material = new THREE.MeshPhongMaterial( { color: "rgba(33%, 34%, 33%,256)", vertexColors: THREE.FaceColors,transparent:true} );
+        const material = new THREE.MeshBasicMaterial( { color: "rgba(33%, 34%, 33%,256)", vertexColors: THREE.FaceColors,transparent:true, opacity:0.1} );
+
         PlayerCube = createGrapicPhysicBox(x,y,z,mass,pos,quat,material,true);//bool at the end means random color for each cube face
         
         //no shadows
@@ -516,7 +528,7 @@ function createPlayerCube(){
 		PlayerCube.userData.TopSpeed = 25;
 		
 		//force that bullets are shot at
-		PlayerCube.userData.shotFireForce = 500;
+		PlayerCube.userData.shotFireForce = 100;
 		
 		//IMPORTANT!
 		//hardcode prevention of Z and X rotation. Can only rotate around Y
