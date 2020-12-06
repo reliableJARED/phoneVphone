@@ -144,7 +144,7 @@ PerspectiveCAMERA( fov, aspect, near, far )
     //Set the initial perspective for the user
     let CAM_X = 0;
     let CAM_Y = 1; 
-    let CAM_Z = -12;
+    let CAM_Z = -10;
 
    //CAMERA = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 0.2, 2000 );	
    CAMERA = new THREE.PerspectiveCamera( fov,aspect,near,far );	 
@@ -187,7 +187,8 @@ PerspectiveCAMERA( fov, aspect, near, far )
 	 backgroundImage = document.createElement("canvas");
 		VIDEO_CANVAS_CTX = backgroundImage.getContext("2d");//set drawing context as a global
 		backgroundImage.width = window.innerWidth;
-		backgroundImage.height = window.innerHeight;
+		//add 1 to force auto scroll.  this way the URL input bar goes away on iOS safari
+		backgroundImage.height = window.innerHeight+1;
 		VIDEO_CANVAS_CTX.drawImage(VIDEO_ELEMENT,0,0);
 		backgroundImage.style.position = 'fixed';
 		//keep our background at lowest level
@@ -488,7 +489,7 @@ function clickShootCube (event){
     //event should be a 'touchstart' event or key press
     event.preventDefault();
     console.log('fire')
-    const radius = 0.5;//meters
+    const radius = 0.8;//meters
     var mass = 1;//kg
     
 
@@ -594,7 +595,7 @@ function createPlayerCube(){
 		PlayerCube.userData.TopSpeed = 25;
 		
 		//force that bullets are shot at
-		PlayerCube.userData.shotFireForce = 50;
+		PlayerCube.userData.shotFireForce = 80;
 		
 		//IMPORTANT! 
 		//hardcode prevention of Z and X rotation. Can only rotate around Y
@@ -689,3 +690,10 @@ function destroyObj(obj){
 //FIRE A SHOUT WITH 
 window.addEventListener('touchstart',clickShootCube,false);
 document.addEventListener("keydown", clickShootCube, false);
+
+//FORCE SCROLL
+/*******This is to fix the issue of the URL bar at the top of the screen
+ * there was a +1 on the video element that should make it so the page is larger
+ * than the view port so a scroll will work
+ */
+window.scrollTo(0,1);
