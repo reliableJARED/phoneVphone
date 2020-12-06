@@ -41,6 +41,11 @@ var BROADPHASE; //AMMO:  used to eliminate objects that can't collide because th
 var SOLVER; //AMMO: dispatch objects  to the SOLVER that have been determined to be in collision
 var TRANSFORM_AUX1 = new Ammo.btTransform();
 
+
+//SOUND EFFECT
+const POP_SOUND = document.createElement("audio");
+POP_SOUND.src = "/resources/sound/328118__greenvwbeetle__pop-7.mp3";
+
 //REPRESENTATION OF THE PLAYER
 let PlayerCube = null;// PlayerCube = createPlayerCube() 
 
@@ -162,9 +167,12 @@ PerspectiveCAMERA( fov, aspect, near, far )
     
     //LIGHT
 	//http://threejs.org/docs/api/lights/AmbientLight.html
-	var ambientLight = new THREE.AmbientLight( 0x404040 );
+	const ambientLight = new THREE.AmbientLight( 0x404040 );
 	//ambientLight is for whole SCENE, use directionalLight for point source/spotlight effect
-    SCENE.add( ambientLight );
+	SCENE.add( ambientLight );
+	const directionalLight = new THREE.DirectionalLight('white',8);
+	directionalLight.position.set(0,10,10);
+	SCENE.add(directionalLight);
 
     //fog to make far objects appear smoothly, not just pop up when they are within render distance
 	SCENE.fog = new THREE.FogExp2( 0xefd1b5, 0.0025 );
@@ -215,12 +223,12 @@ function createObjects() {
 		PHYSICS_WORLD.addRigidBody( cube.userData.physicsBody );
 		*/
 
-		///INVISIBLE GROUND
-		//change and reuse pos for the ground		
-		pos.set( 0, 0, 0 );//-y so it's under objects
-		//note arg 4 is mass, set to 0 so that ground is static object
-		var ground = createTransparentObject(2000,1,2000,0,pos,quat)
-		PHYSICS_WORLD.addRigidBody( ground);
+		///INVISIBLE GROUND  -- NOT USING -- UNCOMMENT TO ADD
+		//----change and reuse pos for the ground		
+		//pos.set( 0, -10, 0 );//-y so it's under objects
+		//----note arg 4 is mass, set to 0 so that ground is static object
+		//var ground = createTransparentObject(2000,1,2000,0,pos,quat)
+		//PHYSICS_WORLD.addRigidBody( ground);
 }
 
 function createTransparentObject(sx, sy, sz, mass, pos, quat){
@@ -263,6 +271,64 @@ function createTransparentObject(sx, sy, sz, mass, pos, quat){
 	
 	
 }
+
+function createGaphicPhysicSphere (radius, mass, pos, quat, material,widthSegments, heightSegments,){
+    /***TODO***Change input to an object so it's not order based */
+	/////// GRAPHICS
+	widthSegments =  widthSegments || 32;//default 32 should be fine to make shape round ish
+	heightSegments =heightSegments || 32; //default 32 should be fine to make shape round ish
+	material = material || new THREE.MeshBasicMaterial( {color: 0xff0000} ); //red default
+
+	const geometry = new THREE.SphereGeometry( radius, widthSegments, heightSegments );
+	const Sphere = new THREE.Mesh( geometry, material );
+
+	////// PHISICS
+	const physicsShape = new Ammo.btSphereShape( radius );
+	//set the collision margin, don't use zero, default is typically 0.04
+	physicsShape.setMargin(0.04);
+
+	/*set the location of our physics object based on where the graphics object is*/
+	//btTransform() supports rigid transforms with only translation and rotation and no scaling/shear.
+	const transform = transforSetup(pos,quat);
+
+	//set the motion state and inertia of our object
+	const motionState = new Ammo.btDefaultMotionState( transform );
+
+	//http://stackoverflow.com/questions/16322080/what-does-having-an-inertia-tensor-of-zero-do-in-bullet
+	//tendency of our object to resist changes in its velocity, in our case none in any direction.
+	const localInertia = new Ammo.btVector3( 0, 0, 0 );
+	
+	physicsShape.calculateLocalInertia( mass, localInertia );
+	
+	//create our final physics body info
+	const rbInfo = new Ammo.btRigidBodyConstructionInfo( mass, motionState, physicsShape, localInertia );
+	
+	//build our ridgidBody
+	const ammoSphere = new Ammo.btRigidBody( rbInfo );
+	
+	//attach the physic properties to the graphic object
+	Sphere.userData.physicsBody = ammoSphere;
+	
+	//Sphere contains both our graphic and physics components
+	return Sphere;
+
+	
+}
+
+function transforSetup(pos,quat){
+	/*set the location of our physics object based on where the graphics object is*/
+	//btTransform() supports rigid transforms with only translation and rotation and no scaling/shear.
+	var transform = new Ammo.btTransform();
+	transform.setIdentity();
+	
+	//setOrigin() is for location
+	transform.setOrigin( new Ammo.btVector3( pos.x, pos.y, pos.z ) );
+    
+	//setRotation() is for Orientation
+	transform.setRotation( new Ammo.btQuaternion( quat.x, quat.y, quat.z, quat.w ) );
+
+	return transform
+}
 //REALbox(x,y,z,mass,pos,quat,material);
 function createGrapicPhysicBox (sx, sy, sz, mass, pos, quat, material,rndFaceColors){
     rndFaceColors = rndFaceColors || false; //color assignment 
@@ -288,14 +354,7 @@ function createGrapicPhysicBox (sx, sy, sz, mass, pos, quat, material,rndFaceCol
 	
 	/*set the location of our physics object based on where the graphics object is*/
 	//btTransform() supports rigid transforms with only translation and rotation and no scaling/shear.
-	var transform = new Ammo.btTransform();
-	transform.setIdentity();
-	
-	//setOrigin() is for location
-	transform.setOrigin( new Ammo.btVector3( pos.x, pos.y, pos.z ) );
-    
-	//setRotation() is for Orientation
-	transform.setRotation( new Ammo.btQuaternion( quat.x, quat.y, quat.z, quat.w ) );
+	const transform = transforSetup(pos,quat);
 	
 	//set the motion state and inertia of our object
 	var motionState = new Ammo.btDefaultMotionState( transform );
@@ -429,38 +488,38 @@ function clickShootCube (event){
     //event should be a 'touchstart' event or key press
     event.preventDefault();
     console.log('fire')
-    var x=1;//meters
-    var y=1;//meters
-    var z=3;//meters
+    const radius = 0.5;//meters
     var mass = 1;//kg
     
 
-    var pos =  PlayerCube.position;
+	var pos =  PlayerCube.position;
+	//use the current position of the player but add 2 to y so it shoots from player 'top'
     pos.addVectors(pos,new THREE.Vector3(0,2,0));
     
     var quat = new THREE.Quaternion();
     
     //assign random color when creating the new mesh
-    //const material = new THREE.MeshPhongMaterial({ color: Math.random() * 0xffffff } );
+    const material = new THREE.MeshPhongMaterial({ color: Math.random() * 0xffffff,shininess:100 } );
 
-    const material = new THREE.MeshBasicMaterial({ color: 0xff0000} );
+    //const material = new THREE.MeshBasicMaterial({ color: 0xff0000} );
 
-    var cube = createGrapicPhysicBox(x,y,z,mass,pos,quat,material);
-    console.log(cube)
+    const sphere = createGaphicPhysicSphere(radius,mass,pos,quat,material);
+    console.log(sphere)
     
     /*DO NOT ENABLE cast shadow for these blocks system performance will be terrible!
     It's ok if they receive though.*/
-//	cube.castShadow = true;
-    //cube.receiveShadow = true;
+	//sphere.castShadow = true;
+	sphere.receiveShadow = true;
+	sphere.flatShadding = true;
     
     //////////////// ADD THIS - see git repo game1  https://github.com/reliableJARED/WebGL/blob/gh-pages/static/js/game1.js#L563
     //weaker then our main object
-    //cube.userData.breakApart = new breakApart(15);
+    //sphere.userData.breakApart = new breakApart(15);
             
-    //add our cube to our array, scene and physics world.
-    RIGID_BODIES.push(cube);
-    SCENE.add( cube );//Graphics add
-    PHYSICS_WORLD.addRigidBody( cube.userData.physicsBody );// Physics add	
+    //add our sphere to our array, scene and physics world.
+    RIGID_BODIES.push(sphere);
+    SCENE.add( sphere );//Graphics add
+    PHYSICS_WORLD.addRigidBody( sphere.userData.physicsBody );// Physics add	
     /*
     TODO:
     add the current speed/direction of PlayerCube to the shot
@@ -480,12 +539,16 @@ function clickShootCube (event){
              if( (QUAT > 0.74 && QUAT < 1.0) || (QUAT > -1  && QUAT < -0.74 )  ){Zquad=-1}
              else {Zquad=1}
              
-              cube.userData.physicsBody.applyCentralImpulse(new Ammo.btVector3( thrustX,0,thrustZ*Zquad ));
+			 sphere.userData.physicsBody.applyCentralImpulse(new Ammo.btVector3( thrustX,0,thrustZ*Zquad ));
     
     
     //destroy the shot in x miliseconds (1000 =1 seconds)
     //removes it from the world so we don't litter with bullets
-    destructionTimer(cube,2000);	
+	destructionTimer(sphere,2000);	
+	
+	//////// SOUND
+	console.log(POP_SOUND);
+	POP_SOUND.play();
     
 }
 
@@ -543,7 +606,7 @@ function createPlayerCube(){
 		SCENE.add( PlayerCube );
 		PHYSICS_WORLD.addRigidBody( PlayerCube.userData.physicsBody );
 		
-		
+	
 		
 		
 		/*
@@ -620,6 +683,7 @@ function destroyObj(obj){
 	}
 	
 }
+
 
 
 //FIRE A SHOUT WITH 

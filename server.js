@@ -29,6 +29,7 @@ app.use(serveStatic(__dirname + '/js/lib/'));
 app.use(serveStatic(__dirname + '/js/libs/three.js/build/three.js'));
 app.use(serveStatic(__dirname + '/js/lib/ammo.js'));
 app.use(serveStatic(__dirname + '/js/lib/socket.io.min.js'));
+app.use(serveStatic(__dirname+'/resources/sound/'));
 
 
 //serve HTML to initial get request
