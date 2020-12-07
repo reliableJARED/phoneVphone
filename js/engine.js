@@ -109,7 +109,8 @@ function initUserCamFeed(){
 
     const videoElementWithCamStream = navigator.mediaDevices.getUserMedia(constraints)
     .then(new Promise(createVideoElement,errorHandler))
-    .then(setStreamToVideoElement).catch(errorHandler)
+	.then(setStreamToVideoElement).catch(errorHandler)
+	.then(hideURL);
 
 
 	//Add local camera stream to our video element
@@ -380,6 +381,7 @@ function createGrapicPhysicBox (sx, sy, sz, mass, pos, quat, material,rndFaceCol
 }
 
 function initInput() {
+	////////////// DISABLE THIS - left here for debut only
 	//VIEW CONTROL
 	/*contorl our CAMERA and move around our world.*/
     CONTROLS = new THREE.OrbitControls( CAMERA );
@@ -553,7 +555,8 @@ function clickShootCube (event){
     
 }
 
-function createPlayerCube(){
+function createPlayerCube(event){
+	console.log(event);
     //PlayerCube is what the other players will see.  However, it's not visible to the local user because it's just behind the field of view
     //need to keep track of its orientation so that when we shoot, it looks like it's coming from the camera
 
@@ -568,7 +571,7 @@ function createPlayerCube(){
 		//create a graphic and physic component for our PlayerCube
 		//NOTE! pass vertexColors because each cube face will be random color
         //var material = new THREE.MeshPhongMaterial( { color: "rgba(33%, 34%, 33%,256)", vertexColors: THREE.FaceColors,transparent:true} );
-        const material = new THREE.MeshBasicMaterial( { color: "rgba(33%, 34%, 33%,256)", vertexColors: THREE.FaceColors,transparent:true, opacity:0.1} );
+        const material = new THREE.MeshBasicMaterial( { color: "rgba(33%, 34%, 33%,256)", vertexColors: THREE.FaceColors,transparent:true, opacity:0.05} );
 
 		/// return from createGrapicPhysicBox() joint physics/graphics object where Object.userData.physicsBody is a Ammo.btRigidBody
         PlayerCube = createGrapicPhysicBox(x,y,z,mass,pos,quat,material,true);//bool at the end means random color for each cube face
@@ -585,16 +588,6 @@ function createPlayerCube(){
 		//log total damage on player, 'life' of player
 		PlayerCube.userData.totalDmg = 0;
 
-        /****** IMPORTANT LOCATION PROPERTIES - will be set from Phone Movement */
-		//torque force for turning
-		PlayerCube.userData.RotationForce = 3;
-		
-		//forward reverse movement force
-		PlayerCube.userData.MovementForce = 3;
-		
-		//used to limit constant accelleration
-		PlayerCube.userData.TopSpeed = 25;
-		
 		//force that bullets are shot at
 		PlayerCube.userData.shotFireForce = 80;
 
@@ -705,12 +698,15 @@ function pitch(){
 }
 
 //FIRE A SHOUT WITH 
-window.addEventListener('touchstart',clickShootCube,false);
-document.addEventListener("keydown", clickShootCube, false);
+window.addEventListener('touchstart',((e)=>{clickShootCube(e)}),false);
+document.addEventListener("keydown", ((e)=>{clickShootCube(e)}), false);
 
-//FORCE SCROLL
+
+function hideURL(){
+	//FORCE SCROLL
 /*******This is to fix the issue of the URL bar at the top of the screen
  * there was a +1 on the video element that should make it so the page is larger
  * than the view port so a scroll will work
  */
-window.scrollTo(0,10);
+	window.scrollTo(0,10);
+};
