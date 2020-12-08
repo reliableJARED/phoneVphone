@@ -110,7 +110,6 @@ function initUserCamFeed(){
     const videoElementWithCamStream = navigator.mediaDevices.getUserMedia(constraints)
     .then(new Promise(createVideoElement,errorHandler))
 	.then(setStreamToVideoElement).catch(errorHandler)
-	.then(hideURL);
 
 
 	//Add local camera stream to our video element
@@ -701,12 +700,12 @@ function pitch(){
 window.addEventListener('touchstart',((e)=>{clickShootCube(e)}),false);
 document.addEventListener("keydown", ((e)=>{clickShootCube(e)}), false);
 
+window.addEventListener("deviceorientation",event =>{
+	console.log("deviceorientation")
+	console.log(event);
+}, true);
 
-function hideURL(){
-	//FORCE SCROLL
-/*******This is to fix the issue of the URL bar at the top of the screen
- * there was a +1 on the video element that should make it so the page is larger
- * than the view port so a scroll will work
- */
-	window.scrollTo(0,10);
-};
+window.addEventListener("devicemotion",event =>{
+	console.log("devicemotion")
+	console.log(event);
+}, true);
