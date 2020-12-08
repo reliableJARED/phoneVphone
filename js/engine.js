@@ -700,12 +700,42 @@ function pitch(){
 window.addEventListener('touchstart',((e)=>{clickShootCube(e)}),false);
 document.addEventListener("keydown", ((e)=>{clickShootCube(e)}), false);
 
-window.addEventListener("deviceorientation",event =>{
-	console.log("deviceorientation")
-	console.log(event);
-}, true);
+function requestDevicemotion() {
+    // feature detect
+    if (typeof DeviceMotionEvent.requestPermission === 'function') {
+      DeviceMotionEvent.requestPermission()
+        .then(permissionState => {
+          if (permissionState === 'granted') {
+            window.addEventListener('devicemotion', onDeviceMotion);
+          }
+        })
+        .catch(console.error);
+    } else {
+      // handle regular non iOS 13+ devices
+    }
+  };
 
-window.addEventListener("devicemotion",event =>{
-	console.log("devicemotion")
+  function requestDeviceOrientation() {
+    // feature detect
+    if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+      DeviceOrientationEvent.requestPermission()
+        .then(permissionState => {
+          if (permissionState === 'granted') {
+            window.addEventListener('deviceorientation', onDeviceOrientation);
+          }
+        })
+        .catch(console.error);
+    } else {
+      // handle regular non iOS 13+ devices
+    }
+  }
+
+  function onDeviceMotion (event){
+	  console.log('motion');
+	  console.log(event);
+  }
+
+  function onDeviceOrientation (event){
+	console.log('orientation');
 	console.log(event);
-}, true);
+}
