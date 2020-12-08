@@ -64,9 +64,7 @@ function init() {
 		createObjects();
 
 		initInput();
-		
-		requestDeviceMotion();
-		requestDeviceOrientation();//ask for orientation permission ios
+
 }
 
 
@@ -699,7 +697,12 @@ function pitch(){
 }
 
 //FIRE A SHOUT WITH 
-window.addEventListener('touchstart',((e)=>{clickShootCube(e)}),false);
+window.addEventListener('touchstart',((e)=>{
+	//could only be called on a user gesture (e.g. click).
+	requestDeviceMotion();
+	requestDeviceOrientation();//ask for orientation permission ios
+	clickShootCube(e)}),false);
+	
 document.addEventListener("keydown", ((e)=>{clickShootCube(e)}), false);
 
 function requestDeviceMotion() {
