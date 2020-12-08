@@ -63,8 +63,10 @@ function init() {
 
 		createObjects();
 
-        initInput();
-
+		initInput();
+		
+		requestDeviceMotion();
+		requestDeviceOrientation();//ask for orientation permission ios
 }
 
 
@@ -700,7 +702,7 @@ function pitch(){
 window.addEventListener('touchstart',((e)=>{clickShootCube(e)}),false);
 document.addEventListener("keydown", ((e)=>{clickShootCube(e)}), false);
 
-function requestDevicemotion() {
+function requestDeviceMotion() {
     // feature detect
     if (typeof DeviceMotionEvent.requestPermission === 'function') {
       DeviceMotionEvent.requestPermission()
@@ -739,3 +741,13 @@ function requestDevicemotion() {
 	console.log('orientation');
 	console.log(event);
 }
+
+////// hide search bar of iOS device
+//     https://stackoverflow.com/questions/10714966/remove-the-url-search-bar-from-android-iphone/14116294
+window.addEventListener("load",function() {
+	// Set a timeout...
+	setTimeout(function(){
+	  // Hide the address bar!
+	  window.scrollTo(0, 1);
+	}, 0);
+  }); 
