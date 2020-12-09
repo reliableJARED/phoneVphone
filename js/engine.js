@@ -548,8 +548,7 @@ function clickShootCube (event){
     //removes it from the world so we don't litter with bullets
 	destructionTimer(sphere,2500);	
 	
-	//////// SOUND
-	console.log(POP_SOUND);
+	//////// SOUND EFFECT
 	POP_SOUND.play();
     
 }
@@ -696,11 +695,20 @@ function pitch(){
 	//update player pitch (up down rotation) movement
 }
 
+window.addEventListener('touchend',((e)=>{
+	/*****************iPhone
+	 Access to device motion is only granted if it's triggered
+	 with a gesture BUT not any gesture. click or touchend NOT a touchstart
+	 */
+		//could only be called on a user gesture (e.g. click).
+		requestDeviceMotion();
+		requestDeviceOrientation();//ask for orientation permission ios
+		//THIRD arg once:TRUE - only fire this listener once
+}),{once:true});
+
 //FIRE A SHOUT WITH 
 window.addEventListener('touchstart',((e)=>{
-	//could only be called on a user gesture (e.g. click).
-	requestDeviceMotion();
-	requestDeviceOrientation();//ask for orientation permission ios
+
 	clickShootCube(e)}),false);
 	
 document.addEventListener("keydown", ((e)=>{clickShootCube(e)}), false);
@@ -751,6 +759,6 @@ window.addEventListener("load",function() {
 	// Set a timeout...
 	setTimeout(function(){
 	  // Hide the address bar!
-	  window.scrollTo(0, 1);
+	  window.scrollTo(0, 100);
 	}, 0);
   }); 

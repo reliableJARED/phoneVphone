@@ -3,6 +3,7 @@
 <html lang="en">
 	<head>
 		<title>Phone vs Phone</title>
+		<link rel="icon" href="data:,"> <!-- stop favicon request -->
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
 		<!-- Force hide of URL bar on safari for iOS, runs in full screen mode-->
@@ -21,6 +22,10 @@
     			-moz-user-select: none;
    				 -ms-user-select: none;
     			user-select: none;
+			}
+			#container{
+				/* Done to try and force auto scroll down to hide iOS search bar */
+				padding-top: 100px;
 			}
 		</style>
 	</head>
