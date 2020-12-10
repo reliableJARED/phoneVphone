@@ -383,8 +383,12 @@ function initInput() {
 	////////////// DISABLE THIS - left here for debut only
 	//VIEW CONTROL
 	/*contorl our CAMERA and move around our world.*/
+	/*
+	https://threejs.org/docs/#examples/en/controls/OrbitControls
+	*/
     CONTROLS = new THREE.OrbitControls( CAMERA );
 	CONTROLS.target.y = 2;
+	CONTROLS.enableKeys = false; //for testing stop keyboard from chaning view
 };
 
 function initPhysics() {
@@ -496,7 +500,7 @@ function clickShootCube (event){
 
 	var pos =  PlayerCube.position;
 	//use the current position of the player but add 2 to y so it shoots from player 'top'
-    pos.addVectors(pos,new THREE.Vector3(0,2,0));
+    pos.addVectors(pos,new THREE.Vector3(0,0,0));
     
     var quat = new THREE.Quaternion();
     
@@ -523,13 +527,18 @@ function clickShootCube (event){
     SCENE.add( sphere );//Graphics add
     PHYSICS_WORLD.addRigidBody( sphere.userData.physicsBody );// Physics add	
     /*
-    TODO:
-    add the current speed/direction of PlayerCube to the shot
-    correct for orientation
+	Get the current Rotation of the player to determine how the sphere should be fired
+	thrust can be applied in three directions x,y,z so that the direction of fire
+	matches the direction the player is 'looking'
     */
-    
-               var thrustZ = PlayerCube.userData.shotFireForce * Math.cos(PlayerCube.rotation._y);
-               var thrustX = PlayerCube.userData.shotFireForce * Math.sin(PlayerCube.rotation._y);
+   console.log('rogation',PlayerCube.rotation._x)
+	
+   //It's easier to get the rotation from three.js then ammo.js, there are just less steps
+   //the physics objects update graphics objects so you should get the same answer regardless of which one is used
+
+	let thrustX = PlayerCube.userData.shotFireForce * Math.sin(PlayerCube.rotation._y);
+	//let thrustY = PlayerCube.userData.shotFireForce * Math.cos(PlayerCube.rotation._y);
+	let thrustZ = PlayerCube.userData.shotFireForce * Math.cos(PlayerCube.rotation._y);
                
                //used to determine if thrust in the z should be pos or neg
                var Zquad ;
@@ -562,14 +571,32 @@ function createPlayerCube(event){
 		var x=2;//meters
 		var y=2;//meters
 		var z=2;//meters
-		var mass = 0;// kg -- BUT if 0 will have infinity mass and not move or be affected by gravity
+		var mass = 0;// kg -- BUT if 0 will have infinity mass and not move or be affected by gravity STATIC BODY or KINEMATIC BODY
 		var pos = new THREE.Vector3(0,0,0);	
+		//////////////// QUATERNIONS  ////////////////////
+		/*
+		https://answers.unity.com/storage/attachments/139923-xyz.png
+		https://stackoverflow.com/questions/4436764/rotating-a-quaternion-on-1-axis
+		X,Y, Z compoent of quaternion is direction of axis around which we rotate.
+		Quaternions are four-dimensional, so you need four properties. 
+		The x/y/z properties don't correspond to x/y/z in euler angles. 
+		With quaternions, each of the properties is a normalized float between 0 and 1, 
+		so for example a euler angle of 45/90/180 is represented by a quaternion as approximately .65/-.27/.65/.27.
+		
+		a quaternion is a complex number with w as the real part and x, y, z as imaginary parts.
+		If a quaternion represents a rotation then w = cos(theta / 2), where theta is the rotation angle around the axis of the quaternion.
+		The axis v(v1, v2, v3) of a rotation is encoded in a quaternion: **x = v1 sin (theta / 2), y = v2 sin (theta / 2), z = v3 sin (theta / 2)*.
+		If w is 1 then the quaternion defines 0 rotation angle around an undefined axis v = (0,0,0).
+		If w is 0 the quaternion defines a half circle rotation since theta then could be +/- pi.
+		If w is -1 the quaternion defines +/-2pi rotation angle around an undefined axis v = (0,0,0).
+		A quater circle rotation around a single axis causes w to be +/- 0.5 and x/y/z to be +/- 0.5.
+		*/
 		var quat = new THREE.Quaternion();
 		
 		//create a graphic and physic component for our PlayerCube
 		//NOTE! pass vertexColors because each cube face will be random color
         //var material = new THREE.MeshPhongMaterial( { color: "rgba(33%, 34%, 33%,256)", vertexColors: THREE.FaceColors,transparent:true} );
-        const material = new THREE.MeshBasicMaterial( { color: "rgba(33%, 34%, 33%,256)", vertexColors: THREE.FaceColors,transparent:true, opacity:0.05} );
+        const material = new THREE.MeshBasicMaterial( { color: "rgba(33%, 34%, 33%,256)", vertexColors: THREE.FaceColors,transparent:true, opacity:0.4} );
 
 		/// return from createGrapicPhysicBox() joint physics/graphics object where Object.userData.physicsBody is a Ammo.btRigidBody
         PlayerCube = createGrapicPhysicBox(x,y,z,mass,pos,quat,material,true);//bool at the end means random color for each cube face
@@ -609,23 +636,7 @@ function createPlayerCube(event){
 		SCENE.add( PlayerCube );
 		PHYSICS_WORLD.addRigidBody( PlayerCube.userData.physicsBody );
 		
-	
-		
-		
-		/*
-		Future:
-		to add other geometry to our cube:
-		// Create a Point2Point constraint to keep two objects bound together
-		// position_a is the point of constraint relative to object_a's position
-		// position_b is the point of constraint relative to object_b's position
-		var constraint = new Ammo.btPoint2PointConstraint(
-			object_a,
-			object_b,
-			new Ammo.btVector3( position_a.x, position_a.y, position_a.z ),
-			new Ammo.btVector3( position_b.x, position_b.y, position_b.z )
-			);
-		physicsWorld.addConstraint( constraint );
-        */
+
         return PlayerCube;
 }
 
@@ -706,12 +717,81 @@ window.addEventListener('touchend',((e)=>{
 		//THIRD arg once:TRUE - only fire this listener once
 }),{once:true});
 
+
+function THREE_createRotationFromAxisAngle(xx,yy,zz,a){
+	/*** FUNCTION SOURCE:
+	https://stackoverflow.com/questions/4436764/rotating-a-quaternion-on-1-axis
+	*/
+	let angle = (a*Math.PI)/180;
+	// calculate the sin( theta / 2) once for optimization
+	let factor = Math.sin(angle/2);
+
+	// Calculate the x, y and z of the quaternion
+	let x = xx * factor;
+	let y = yy * factor;
+	let z = zz * factor;
+
+	// Calcualte the w value by cos( theta / 2 )
+	let w = Math.cos(angle/2);
+
+	//create Quaternion
+	let quat = new THREE.Quaternion(x,y,z,w);
+	//let quat = new Ammo.btQuaternion(x,y,z,w);
+	console.log(quat)
+
+	//Normalizes this quaternion - that is, calculated the quaternion that performs the same rotation as this one, but has length equal to 1.
+	return quat.normalize();
+};
+
 //FIRE A SHOUT WITH 
 window.addEventListener('touchstart',((e)=>{
 
 	clickShootCube(e)}),false);
 	
-document.addEventListener("keydown", ((e)=>{clickShootCube(e)}), false);
+document.addEventListener("keydown", ((e)=>{
+	console.log(e.key);
+	switch (e.key){
+		case 37:
+			//LEFT
+			break;
+		case 'ArrowUp':
+			//UP
+			let transform = PlayerCube.userData.physicsBody.getWorldTransform();//get the world location/rotation of player
+			//get current player rotation quaternion from three.js
+			let quat = PlayerCube.quaternion;
+			
+			//amount to rotate by
+			let angle = 15;//degrees
+		
+			//create a Quat with a angle degree rotation around X axis
+			let quat_new = THREE_createRotationFromAxisAngle(1,0,0,angle);
+
+			//multiply the current player, by the rotated quat to get desired resulting quat
+			quat.multiplyQuaternions(quat,quat_new);
+
+			///////:
+			//	https://medium.com/@bluemagnificent/moving-objects-in-javascript-3d-physics-using-ammo-js-and-three-js-6e39eff6d9e5
+			//make a new Quat for ammo.js
+			let btQuat = new Ammo.btQuaternion(quat._x,quat._y,quat._z,quat._w);
+			
+			//set player object using the new quat
+			transform.setRotation( btQuat );
+
+			//Update the motionState with the new WorldTransform
+			PlayerCube.userData.physicsBody.getMotionState().setWorldTransform(transform);
+			PlayerCube.userData.physicsBody.setActivationState(4);//NEVER SLEEP THE OBJECT
+			console.log('up');
+			break;
+		case 39:
+			//RIGHT
+			break;
+		case 40:
+			//DOWN
+			break;
+		default:
+			clickShootCube(e)
+		}
+	}), false);
 
 function requestDeviceMotion() {
     // feature detect
@@ -749,8 +829,17 @@ function requestDeviceMotion() {
   }
 
   function onDeviceOrientation (event){
-	console.log('orientation');
-	console.log(event);
+	  /// good resource
+	  /*  
+	  https://developers.google.com/web/fundamentals/native-hardware/device-orientation
+	  https://developer.apple.com/documentation/coremotion/getting_processed_device-motion_data/understanding_reference_frames_and_device_attitude
+	  */
+	//console.log('orientation');
+	//console.log(event);
+
+	//ROTATE PlayerCube --- PHYSICS
+
+
 }
 
 ////// hide search bar of iOS device
@@ -758,7 +847,7 @@ function requestDeviceMotion() {
 window.addEventListener("load",function() {
 	// Set a timeout...
 	setTimeout(function(){
-	  // Hide the address bar!
-	  window.scrollTo(0, 100);
+	  // Hide the address bar! - this needs work, must coordinate with canvas/video size comment out for now
+	 // window.scrollTo(0, 100);
 	}, 0);
   }); 
