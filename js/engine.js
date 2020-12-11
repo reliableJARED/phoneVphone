@@ -433,6 +433,8 @@ function initPhysics() {
 };
 
 function updatePhysics( deltaTime ) {
+	let alpha = devicemotion_state.get().alpha;//get the orientation of phone
+	console.log(alpha);
 // Step world
 /*By default, Bullet physics simulation runs at an internal fixed framerate of 60 Hertz (0.01666) or (60fps). The
 game or application might have a different or even variable framerate. To decouple the application
@@ -538,7 +540,6 @@ function clickShootCube (event){
 	thrust can be applied in three directions x,y,z so that the direction of fire
 	matches the direction the player is 'looking'
     */
-   console.log('rogation',PlayerCube.rotation._x)
 	
    //It's easier to get the rotation from three.js then ammo.js, there are just less steps
    //the physics objects update graphics objects so you should get the same answer regardless of which one is used
