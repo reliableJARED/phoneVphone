@@ -28,12 +28,24 @@ var CONTROLS;
 var RAYCASTER = new THREE.Raycaster();//http://threejs.org/docs/api/core/RAYCASTER.html
 var backgroundImage, VIDEO_CANVAS_CTX;// lower layer canvas that has video feed
 
+//GLOBAL Camera perspective variable container
+const CAMERA_PERSPECTIVE = (()=>{
+	// mess around with these to get the right view perspective
+	const camX = 0;
+    const camY = 3; 
+    const camZ = -7;
+	return {
+		x: ()=>{ return camX},
+		y: ()=>{ return camY},
+		z: ()=>{ return camZ},
+	};
+})();
 //GLOBAL for the HTML5 video element holding our local video feed
 var VIDEO_ELEMENT = null;
 
 //GLOBAL Physics variables
 var PHYSICS_WORLD;
-var GRAVITY_CONSTANT = -9.8;
+var GRAVITY_CONSTANT = 0;//-9.8;
 var RIGID_BODIES = [];
 var COLLISION_CONFIGURATION;
 var DISPATCHER; //AMMO: This is used to dispatch objects that have been determined to be in collision to the SOLVER
@@ -140,18 +152,13 @@ PerspectiveCAMERA( fov, aspect, near, far )
     const fov = 60;
     const aspect = (window.innerWidth / window.innerHeight);
     const near = 0.1;
-    const far = 500;
-    //Set the initial perspective for the user
-    let CAM_X = 0;
-    let CAM_Y = 3; 
-    let CAM_Z = -7;
+    const far = 1000;
 
-   //CAMERA = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 0.2, 2000 );	
-   CAMERA = new THREE.PerspectiveCamera( fov,aspect,near,far );	 
-   //mess around with these parameters to adjust CAMERA perspective view point
-    CAMERA.position.x = CAM_X;
-	CAMERA.position.y = CAM_Y;
-    CAMERA.position.z =  CAM_Z;
+   CAMERA = new THREE.PerspectiveCamera( fov,aspect,near,far );	 //mess around with these parameters to adjust CAMERA perspective view point
+	//Set the initial perspective for the user
+    CAMERA.position.x = CAMERA_PERSPECTIVE.x();
+	CAMERA.position.y = CAMERA_PERSPECTIVE.y();
+    CAMERA.position.z = CAMERA_PERSPECTIVE.z();
 				
 	SCENE = new THREE.Scene();//http://threejs.org/docs/#Reference/SCENEs/SCENE
     
@@ -478,7 +485,7 @@ function render() {
        RENDERER.render( SCENE, CAMERA );//graphics
 	   CONTROLS.update( deltaTime );//view control
 	   updatePhysics( deltaTime );//physics
-	   
+	   updateCamera();//update view
 	   //UPDATE!  the scaling of the video feed may not be needed.  will have to test
 	   VIDEO_CANVAS_CTX.drawImage(VIDEO_ELEMENT,0,0,VIDEO_ELEMENT.videoWidth ,VIDEO_ELEMENT.videoHeight,0,0,backgroundImage.width,backgroundImage.height);//update video feed and stretch to fit screen
        };
@@ -604,11 +611,6 @@ function createPlayerCube(event){
         //no shadows
 		PlayerCube.castShadow = false;
         PlayerCube.receiveShadow = false;
-        
-        //DEBUG HELP
-		console.log(PlayerCube);//inspect to see whats availible
-		console.log(PlayerCube.userData.physicsBody.getUserPointer());
-		console.log(PlayerCube.userData.physicsBody.getUserIndex());
 		
 		//log total damage on player, 'life' of player
 		PlayerCube.userData.totalDmg = 0;
@@ -717,8 +719,28 @@ window.addEventListener('touchend',((e)=>{
 		//THIRD arg once:TRUE - only fire this listener once
 }),{once:true});
 
+function btMultiplyQuaternions(quatA,quatB){
+	console.log(quatA,quatB)
+	/////// consider adding this to the ammo.js Quaternion object proto at some point
 
-function THREE_createRotationFromAxisAngle(xx,yy,zz,a){
+// from http://www.euclideanspace.com/maths/algebra/realNormedAlgebra/quaternions/code/index.htm
+
+	let qax = quatA.x(), qay = quatA.y(), qaz = quatA.z(), qaw = quatA.w();
+	let qbx = quatB.x(), qby = quatB.y(), qbz = quatB.z(), qbw = quatB.w();
+
+	//someone else knows this works, see link
+	let x = qax * qbw + qaw * qbx + qay * qbz - qaz * qby;
+	let y = qay * qbw + qaw * qby + qaz * qbx - qax * qbz;
+	let z = qaz * qbw + qaw * qbz + qax * qby - qay * qbx;
+	let w = qaw * qbw - qax * qbx - qay * qby - qaz * qbz;
+
+	return new Ammo.btQuaternion(x,y,z,w);
+}
+
+
+function createRotationFromAxisAngle(xx,yy,zz,a,options){
+	//options is a flag object to return a Ammo quaternion or a Threejs, default Three
+	options = options|| {type:'threejs'};
 	/*** FUNCTION SOURCE:
 	https://stackoverflow.com/questions/4436764/rotating-a-quaternion-on-1-axis
 	*/
@@ -734,13 +756,20 @@ function THREE_createRotationFromAxisAngle(xx,yy,zz,a){
 	// Calcualte the w value by cos( theta / 2 )
 	let w = Math.cos(angle/2);
 
-	//create Quaternion
-	let quat = new THREE.Quaternion(x,y,z,w);
+	//create Quaternion holder
+	let quat = null;
+	if(options.type === 'threejs'){
+		 quat = new THREE.Quaternion(x,y,z,w);
+		 return quat.normalize();
+	}else if(options.type === 'ammo'){
+		quat = new Ammo.btQuaternion(x,y,z,w);
+		////// ADD NORMALIZATION METHOD
+		return quat;
+	}
 	//let quat = new Ammo.btQuaternion(x,y,z,w);
-	console.log(quat)
 
 	//Normalizes this quaternion - that is, calculated the quaternion that performs the same rotation as this one, but has length equal to 1.
-	return quat.normalize();
+	//return quat.normalize();
 };
 
 //FIRE A SHOUT WITH 
@@ -749,48 +778,52 @@ window.addEventListener('touchstart',((e)=>{
 	clickShootCube(e)}),false);
 	
 document.addEventListener("keydown", ((e)=>{
-	console.log(e.key);
+	//amount to rotate by
+	let angle = 15;//degrees
+	let x = 0;
+	let y = 0;
+	let z = 0;
 	switch (e.key){
-		case 37:
-			//LEFT
+		case 'ArrowDown':
+			//LEFT - 37
+			x = 1;
+			angle *= -1;//reverse direction
 			break;
 		case 'ArrowUp':
-			//UP
-			let transform = PlayerCube.userData.physicsBody.getWorldTransform();//get the world location/rotation of player
-			//get current player rotation quaternion from three.js
-			let quat = PlayerCube.quaternion;
-			
-			//amount to rotate by
-			let angle = 15;//degrees
-		
-			//create a Quat with a angle degree rotation around X axis
-			let quat_new = THREE_createRotationFromAxisAngle(1,0,0,angle);
-
-			//multiply the current player, by the rotated quat to get desired resulting quat
-			quat.multiplyQuaternions(quat,quat_new);
-
-			///////:
-			//	https://medium.com/@bluemagnificent/moving-objects-in-javascript-3d-physics-using-ammo-js-and-three-js-6e39eff6d9e5
-			//make a new Quat for ammo.js
-			let btQuat = new Ammo.btQuaternion(quat._x,quat._y,quat._z,quat._w);
-			
-			//set player object using the new quat
-			transform.setRotation( btQuat );
-
-			//Update the motionState with the new WorldTransform
-			PlayerCube.userData.physicsBody.getMotionState().setWorldTransform(transform);
-			PlayerCube.userData.physicsBody.setActivationState(4);//NEVER SLEEP THE OBJECT
-			console.log('up');
+			//UP - 38
+			x = 1;
 			break;
-		case 39:
-			//RIGHT
+		case 'ArrowLeft':
+			//RIGHT - 39
+			y = 1;
 			break;
-		case 40:
-			//DOWN
+		case "ArrowRight":
+			//DOWN - 40
+			y = 1;
+			angle *= -1;
 			break;
 		default:
 			clickShootCube(e)
 		}
+		//get the world location/rotation of player
+		let transform = PlayerCube.userData.physicsBody.getWorldTransform();
+
+		//get current player rotation quaternion from transform
+		var quat = transform.getRotation();
+	
+		//create a Quat with a 'angle' degree of rotation around axis - X rotation = (1,0,0) (x,y,z)
+		let quat_update = createRotationFromAxisAngle(x,y,z,angle,{type:'ammo'}); //return an Ammo quaternion
+
+		//multiply the player quat, by the rotated quat, return a new quat  that is a combination of the two
+		quat = btMultiplyQuaternions(quat,quat_update);
+
+		///////:
+		//	https://medium.com/@bluemagnificent/moving-objects-in-javascript-3d-physics-using-ammo-js-and-three-js-6e39eff6d9e5
+		//set player object transform using the new quat
+		transform.setRotation( quat );
+
+		//Update the motionState with the new WorldTransform
+		PlayerCube.userData.physicsBody.getMotionState().setWorldTransform(transform);
 	}), false);
 
 function requestDeviceMotion() {
@@ -823,9 +856,16 @@ function requestDeviceMotion() {
     }
   }
 
+  var STOP = false;
+  var STOP2 = false;
+
   function onDeviceMotion (event){
 	  console.log('motion');
-	  console.log(event);
+	  if(!STOP){
+		  console.log(event);
+		  STOP = true;
+	  }
+	  
   }
 
   function onDeviceOrientation (event){
@@ -834,12 +874,34 @@ function requestDeviceMotion() {
 	  https://developers.google.com/web/fundamentals/native-hardware/device-orientation
 	  https://developer.apple.com/documentation/coremotion/getting_processed_device-motion_data/understanding_reference_frames_and_device_attitude
 	  */
-	//console.log('orientation');
-	//console.log(event);
+	 console.log('orientation');
+	  if(!STOP){
+		  console.log(event);
+		  STOP2 = true;
+	  }
+
 
 	//ROTATE PlayerCube --- PHYSICS
 
 
+}
+
+
+function updateCamera(){
+	//RAYCASTER.setFromCamera( mouse, camera);
+	   //Set the initial perspective for the user
+	   const X = CAMERA_PERSPECTIVE.x();
+	   const Y = CAMERA_PERSPECTIVE.y();
+	   const Z = CAMERA_PERSPECTIVE.z();
+	   
+		/*CHASE CAMERA EFFECT*/
+		let relativeCameraOffset = new THREE.Vector3(X,Y,Z);//used to set camera chase distance
+		const cameraOffset = relativeCameraOffset.applyMatrix4( PlayerCube.matrixWorld );
+		CAMERA.position.x = cameraOffset.x;
+		CAMERA.position.y = cameraOffset.y;
+		CAMERA.position.z = cameraOffset.z;
+		
+		CAMERA.lookAt( PlayerCube.position );
 }
 
 ////// hide search bar of iOS device
