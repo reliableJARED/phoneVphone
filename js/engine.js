@@ -61,6 +61,26 @@ POP_SOUND.src = "/resources/sound/328118__greenvwbeetle__pop-7.mp3";
 //REPRESENTATION OF THE PLAYER
 let PlayerCube = null;// PlayerCube = createPlayerCube() 
 
+
+//// TRACK DEVICE ORIENTATION
+/*
+maybe a better way to do this
+used as holder for the motion event state
+the pupose is so that the annimationfram()
+use of state is in sync. and not constantly
+update on the event listener
+*/
+const devicemotion_state = (()=>{
+	//false flag is used to determine if state has been acquired yet
+	let state = false;
+	return  {
+		set: (e)=>{ 
+			state = e;
+			return state},
+		get: ()=>{ return state}
+	};
+})();
+
 //MAIN
 init();// start world building
 animate(); //start rendering loop
@@ -433,8 +453,12 @@ function initPhysics() {
 };
 
 function updatePhysics( deltaTime ) {
-	let alpha = devicemotion_state.get().alpha;//get the orientation of phone
-	console.log(alpha);
+	//  https://developers.google.com/web/fundamentals/native-hardware/device-orientation
+	let deviceState = devicemotion_state.get();
+	if(deviceState){
+		let alpha = deviceState.get().rotationRate.alpha;//get the orientation of phone on Z axis
+		console.log('alpha',alpha);
+	}
 // Step world
 /*By default, Bullet physics simulation runs at an internal fixed framerate of 60 Hertz (0.01666) or (60fps). The
 game or application might have a different or even variable framerate. To decouple the application
@@ -721,7 +745,6 @@ window.addEventListener('touchend',((e)=>{
 }),{once:true});
 
 function btMultiplyQuaternions(quatA,quatB){
-	console.log(quatA,quatB)
 	/////// consider adding this to the ammo.js Quaternion object proto at some point
 
 // from http://www.euclideanspace.com/maths/algebra/realNormedAlgebra/quaternions/code/index.htm
@@ -858,22 +881,7 @@ function requestDeviceMotion() {
   }
 
  
-/*
-maybe a better way to do this
-used as holder for the motion event state
-the pupose is so that the annimationfram()
-use of state is in sync. and not constantly
-update on the event listener
-*/
-const devicemotion_state = (()=>{
-	let state = false;
-	return  {
-		set: (e)=>{ 
-			state = e;
-			return state},
-		get: ()=>{ return state}
-	};
-})();
+
 
 var STOP = false;
 var STOP2 = false;
