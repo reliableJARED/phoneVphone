@@ -548,14 +548,14 @@ function clickShootCube (event){
 	let thrustZ = PlayerCube.userData.shotFireForce * Math.cos(PlayerCube.rotation._y);
                
                //used to determine if thrust in the z should be pos or neg
-               var Zquad ;
+               var Zquad =1;
 
                var QUAT = PlayerCube.quaternion._y;
             //   console.log(QUAT);
             
             /*determine what direction our player is facing and the correction neg/pos for applied fire force*/
-             if( (QUAT > 0.74 && QUAT < 1.0) || (QUAT > -1  && QUAT < -0.74 )  ){Zquad=-1}
-             else {Zquad=1}
+            // if( (QUAT > 0.74 && QUAT < 1.0) || (QUAT > -1  && QUAT < -0.74 )  ){Zquad=-1}
+            // else {Zquad=1}
              
 			 sphere.userData.physicsBody.applyCentralImpulse(new Ammo.btVector3( thrustX,0,thrustZ*Zquad ));
     
@@ -779,7 +779,7 @@ window.addEventListener('touchstart',((e)=>{
 	
 document.addEventListener("keydown", ((e)=>{
 	//amount to rotate by
-	let angle = 15;//degrees
+	let angle = 2;//degrees
 	let x = 0;
 	let y = 0;
 	let z = 0;
@@ -856,12 +856,32 @@ function requestDeviceMotion() {
     }
   }
 
-  var STOP = false;
-  var STOP2 = false;
+ 
+/*
+maybe a better way to do this
+used as holder for the motion event state
+the pupose is so that the annimationfram()
+use of state is in sync. and not constantly
+update on the event listener
+*/
+const devicemotion_state = (()=>{
+	let state = false;
+	return  {
+		set: (e)=>{ 
+			state = e;
+			return state},
+		get: ()=>{ return state}
+	};
+})();
 
-  function onDeviceMotion (event){
-	  console.log('motion');
+var STOP = false;
+var STOP2 = false;
+
+function onDeviceMotion (event){
+	devicemotion_state.set(event);
+	//Debug code
 	  if(!STOP){
+		console.log('motion');
 		  console.log(event);
 		  STOP = true;
 	  }
@@ -874,8 +894,9 @@ function requestDeviceMotion() {
 	  https://developers.google.com/web/fundamentals/native-hardware/device-orientation
 	  https://developer.apple.com/documentation/coremotion/getting_processed_device-motion_data/understanding_reference_frames_and_device_attitude
 	  */
-	 console.log('orientation');
+	 
 	  if(!STOP){
+		console.log('orientation');
 		  console.log(event);
 		  STOP2 = true;
 	  }
