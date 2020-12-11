@@ -74,10 +74,12 @@ const devicemotion_state = (()=>{
 	//false flag is used to determine if state has been acquired yet
 	let state = false;
 	return  {
-		set: (e)=>{ 
+		set: function (e){ 
 			state = e;
 			return state},
-		get: ()=>{ return state}
+		get: function(){ 
+			return state;
+			}
 	};
 })();
 
@@ -890,6 +892,7 @@ function onDeviceMotion (event){
 	devicemotion_state.set(event);
 	//Debug code
 	  if(!STOP){
+		console.log(devicemotion_state)
 		console.log('motion');
 		  console.log(event);
 		  STOP = true;
