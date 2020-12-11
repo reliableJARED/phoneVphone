@@ -457,8 +457,9 @@ function initPhysics() {
 function updatePhysics( deltaTime ) {
 	//  https://developers.google.com/web/fundamentals/native-hardware/device-orientation
 	let deviceState = devicemotion_state.get();
+
 	if(deviceState){
-		let alpha = deviceState.get().rotationRate.alpha;//get the orientation of phone on Z axis
+		let alpha = deviceState.rotationRate.alpha;//get the orientation of phone on Z axis
 		console.log('alpha',alpha);
 	}
 // Step world
