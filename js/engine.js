@@ -1043,7 +1043,7 @@ const DEVICE_LOCATION = (function (){
 		const a = DeviceMotionEvent.rotationRate.alpha/deltaTime;
 		const b = DeviceMotionEvent.rotationRate.beta/deltaTime;
 		const g = DeviceMotionEvent.rotationRate.gamma/deltaTime;
-		const acceleration = DeviceMotionEvent.accleration;
+		const acceleration = DeviceMotionEvent.acceleration;
 
 		const quat = btGetDeviceMotionStateQuaternion(a,b,g);
 		const pos = btGetDeviceMotionStateVector(acceleration.x,acceleration.y,acceleration.z, deltaTime);
