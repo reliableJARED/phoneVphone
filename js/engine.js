@@ -470,7 +470,7 @@ function updatePhysics( deltaTime ) {
 		//console.log('alpha',alpha);
 
 		//DEVICE_LOCATION.getTransform returns pos and quat representing where the device is in space
-		transform = DEVICE_LOCATION.getTransform(deviceState);
+		let transform = DEVICE_LOCATION.getTransform(deviceState);
 		///Get update device about WHERE it actually is
 		movePlayerCubeFromDeviceMotion(transform);
 	}
@@ -1033,6 +1033,7 @@ const DEVICE_LOCATION = (function (){
 		const deltaTime = nowTime - beforeTime;
 		//update beforeTime
 		beforeTime = nowTime;
+		console.log('deltaTime',deltaTime);
 	
 		/*
 		/////the device has been moving with beforeState conditions for deltaTime////
@@ -1047,6 +1048,8 @@ const DEVICE_LOCATION = (function (){
 
 		const quat = btGetDeviceMotionStateQuaternion(a,b,g);
 		const pos = btGetDeviceMotionStateVector(acceleration.x,acceleration.y,acceleration.z, deltaTime);
+
+		console.log(quat, pos);
 
 		//return a quaternion and vector that are the new location of device
 		return {quat:quat, pos:pos};
