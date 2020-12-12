@@ -471,8 +471,12 @@ function updatePhysics( deltaTime ) {
 
 		//DEVICE_LOCATION.getTransform returns pos and quat representing where the device is in space
 		let transform = DEVICE_LOCATION.getTransform(deviceState);
+
+		//If the device isn't ready to give location, will be false
+		if(transform){
 		///Get update device about WHERE it actually is
-		movePlayerCubeFromDeviceMotion(transform);
+			movePlayerCubeFromDeviceMotion(transform);
+		}
 	}
 // Step world
 /*By default, Bullet physics simulation runs at an internal fixed framerate of 60 Hertz (0.01666) or (60fps). The
@@ -656,7 +660,7 @@ function createPlayerCube(event){
 		PlayerCube.userData.totalDmg = 0;
 
 		//force that bullets are shot at
-		PlayerCube.userData.shotFireForce = 800;
+		PlayerCube.userData.shotFireForce = 1500;
 
 		//// IMPORTANT to allow user movement
 		/*
@@ -1051,8 +1055,13 @@ const DEVICE_LOCATION = (function (){
 
 		console.log(quat, pos);
 
+		// need to make sure time stamp is accurate
+		if(deltaTime >0){
 		//return a quaternion and vector that are the new location of device
-		return {quat:quat, pos:pos};
+			return {quat:quat, pos:pos};
+		}else{
+			return false;
+		}
 		}
 	}
 
