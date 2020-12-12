@@ -45,7 +45,7 @@ var VIDEO_ELEMENT = null;
 
 //GLOBAL Physics variables
 var PHYSICS_WORLD;
-var GRAVITY_CONSTANT = 0;//-9.8;
+var GRAVITY_CONSTANT = -9.8;
 var RIGID_BODIES = [];
 var COLLISION_CONFIGURATION;
 var DISPATCHER; //AMMO: This is used to dispatch objects that have been determined to be in collision to the SOLVER
@@ -70,9 +70,13 @@ the pupose is so that the annimationfram()
 use of state is in sync. and not constantly
 update on the event listener
 */
-const devicemotion_state = (()=>{
-	//false flag is used to determine if state has been acquired yet
-	let state = false;
+const DEVICE_MOTION_STATE = (()=>{
+	/*
+	state includes state.acceleration.x, .y, .z as (meter/sec.) // https://developers.google.com/web/fundamentals/native-hardware/device-orientation#handle_the_device_motion_events
+	state includes state.rotationRate.alpha, .gamma, .beta (degree/sec.)  // https://developers.google.com/web/fundamentals/native-hardware/device-orientation#rotation_data
+	*/
+	let state = false;//false flag is used to determine if state has been acquired yet
+
 	return  {
 		set: function (e){ 
 			state = e;
@@ -174,7 +178,7 @@ PerspectiveCAMERA( fov, aspect, near, far )
     const fov = 60;
     const aspect = (window.innerWidth / window.innerHeight);
     const near = 0.1;
-    const far = 1000;
+    const far = 3000;
 
    CAMERA = new THREE.PerspectiveCamera( fov,aspect,near,far );	 //mess around with these parameters to adjust CAMERA perspective view point
 	//Set the initial perspective for the user
@@ -319,7 +323,7 @@ function createGaphicPhysicSphere (radius, mass, pos, quat, material,widthSegmen
 
 	/*set the location of our physics object based on where the graphics object is*/
 	//btTransform() supports rigid transforms with only translation and rotation and no scaling/shear.
-	const transform = transforSetup(pos,quat);
+	const transform = transformSetup(pos,quat);
 
 	//set the motion state and inertia of our object
 	const motionState = new Ammo.btDefaultMotionState( transform );
@@ -345,7 +349,7 @@ function createGaphicPhysicSphere (radius, mass, pos, quat, material,widthSegmen
 	
 }
 
-function transforSetup(pos,quat){
+function transformSetup(pos,quat){
 	/*set the location of our physics object based on where the graphics object is*/
 	//btTransform() supports rigid transforms with only translation and rotation and no scaling/shear.
 	var transform = new Ammo.btTransform();
@@ -384,7 +388,7 @@ function createGrapicPhysicBox (sx, sy, sz, mass, pos, quat, material,rndFaceCol
 	
 	/*set the location of our physics object based on where the graphics object is*/
 	//btTransform() supports rigid transforms with only translation and rotation and no scaling/shear.
-	const transform = transforSetup(pos,quat);
+	const transform = transformSetup(pos,quat);
 	
 	//set the motion state and inertia of our object
 	var motionState = new Ammo.btDefaultMotionState( transform );
@@ -456,11 +460,19 @@ function initPhysics() {
 
 function updatePhysics( deltaTime ) {
 	//  https://developers.google.com/web/fundamentals/native-hardware/device-orientation
-	let deviceState = devicemotion_state.get();
+	let deviceState = DEVICE_MOTION_STATE.get();
+	
+	let trans = null;
 
 	if(deviceState){
-		let alpha = deviceState.rotationRate.alpha;//get the orientation of phone on Z axis
-		console.log('alpha',alpha);
+		//rotationRate is provided in °/sec
+		//let alpha = deviceState.rotationRate.alpha;//get the orientation of phone on Z axis
+		//console.log('alpha',alpha);
+
+		//DEVICE_LOCATION.getTransform returns pos and quat representing where the device is in space
+		transform = DEVICE_LOCATION.getTransform(deviceState);
+		///Get update device about WHERE it actually is
+		movePlayerCubeFromDeviceMotion(transform);
 	}
 // Step world
 /*By default, Bullet physics simulation runs at an internal fixed framerate of 60 Hertz (0.01666) or (60fps). The
@@ -488,9 +500,9 @@ for ( let i = 0; i < RIGID_BODIES.length; i++ ) {
             //Bullet calls getWorldTransform with a reference to the variable it wants you to fill with transform information
             ms.getWorldTransform( TRANSFORM_AUX1 );//note: TRANSFORM_AUX1 =  Ammo.btTransform();
             
-            //get the physical location of our object
+            //get the physical location of our object as a vector
             var p = TRANSFORM_AUX1.getOrigin();
-            //get the physical orientation of our object
+            //get the physical orientation of our object as a quaternion
             var q = TRANSFORM_AUX1.getRotation();
             
             //update the graphic of our object with the physical location
@@ -531,7 +543,7 @@ function clickShootCube (event){
     event.preventDefault();
     console.log('fire')
     const radius = 0.8;//meters
-    var mass = 1;//kg
+    var mass = 10;//kg
     
 
 	var pos =  PlayerCube.position;
@@ -590,7 +602,7 @@ function clickShootCube (event){
     
     //destroy the shot in x miliseconds (1000 =1 seconds)
     //removes it from the world so we don't litter with bullets
-	destructionTimer(sphere,2500);	
+	destructionTimer(sphere,5000);	
 	
 	//////// SOUND EFFECT
 	POP_SOUND.play();
@@ -644,7 +656,7 @@ function createPlayerCube(event){
 		PlayerCube.userData.totalDmg = 0;
 
 		//force that bullets are shot at
-		PlayerCube.userData.shotFireForce = 80;
+		PlayerCube.userData.shotFireForce = 800;
 
 		//// IMPORTANT to allow user movement
 		/*
@@ -728,6 +740,7 @@ function destroyObj(obj){
 	
 }
 
+/*
 function yaw(){
 	//update player yaw (Left/rigth rotation) movement
 }
@@ -735,6 +748,7 @@ function yaw(){
 function pitch(){
 	//update player pitch (up down rotation) movement
 }
+*/
 
 window.addEventListener('touchend',((e)=>{
 	/*****************iPhone
@@ -746,6 +760,19 @@ window.addEventListener('touchend',((e)=>{
 		requestDeviceOrientation();//ask for orientation permission ios
 		//THIRD arg once:TRUE - only fire this listener once
 }),{once:true});
+
+function btAddVector (ammoVector1, ammoVector2){
+	// https://evanw.github.io/lightgl.js/docs/vector.html
+	let x1 = ammoVector1.x();
+	let y1 = ammoVector1.y();
+	let z1 = ammoVector1.z();
+
+	let x2 = ammoVector2.x();
+	let y2 = ammoVector2.y();
+	let z2 = ammoVector2.z();
+
+	return new Ammo.btVector3(x1+x2,y1+y2,z1+z2);
+}
 
 function btMultiplyQuaternions(quatA,quatB){
 	/////// consider adding this to the ammo.js Quaternion object proto at some point
@@ -764,14 +791,52 @@ function btMultiplyQuaternions(quatA,quatB){
 	return new Ammo.btQuaternion(x,y,z,w);
 }
 
+function btGetDeviceMotionStateQuaternion (alpha, beta, gamma){
+	//get a Quaternion that represents current orientation of device
+	//// Function from EXAMPLE 12 of:
+	//	https://www.w3.org/TR/orientation-event/
+	const degtorad = Math.PI / 180; // Degree-to-Radian conversion
 
+	var _x = beta  ? beta  * degtorad : 0; // beta value
+	var _y = gamma ? gamma * degtorad : 0; // gamma value
+	var _z = alpha ? alpha * degtorad : 0; // alpha value
+  
+	var cX = Math.cos( _x/2 );
+	var cY = Math.cos( _y/2 );
+	var cZ = Math.cos( _z/2 );
+	var sX = Math.sin( _x/2 );
+	var sY = Math.sin( _y/2 );
+	var sZ = Math.sin( _z/2 );
+  
+	//
+	// ZXY quaternion construction.
+	//
+  
+	var w = cX * cY * cZ - sX * sY * sZ;
+	var x = sX * cY * cZ - cX * sY * sZ;
+	var y = cX * sY * cZ + sX * cY * sZ;
+	var z = cX * cY * sZ + sX * sY * cZ;
+	
+	return new Ammo.btQuaternion(x,y,z,w);;
+  
+  }
+
+function btGetDeviceMotionStateVector(accel_x,accel_y,accel_z, deltaTime){
+	//get position vector of device based on accelleration
+	//https://stackoverflow.com/questions/153507/calculate-the-position-of-an-accelerating-body-after-a-certain-time
+	let x = (1/2) * accel_x * (deltaTime*deltaTime);
+	let y = (1/2) * accel_y * (deltaTime*deltaTime);
+	let z = (1/2) * accel_z * (deltaTime*deltaTime);
+
+	return new Ammo.btVector3(x,y,z);//vector of new position
+}
 function createRotationFromAxisAngle(xx,yy,zz,a,options){
 	//options is a flag object to return a Ammo quaternion or a Threejs, default Three
 	options = options|| {type:'threejs'};
 	/*** FUNCTION SOURCE:
 	https://stackoverflow.com/questions/4436764/rotating-a-quaternion-on-1-axis
 	*/
-	let angle = (a*Math.PI)/180;
+	let angle = (a*Math.PI)/180;// Degree-to-Radian conversion
 	// calculate the sin( theta / 2) once for optimization
 	let factor = Math.sin(angle/2);
 
@@ -853,6 +918,32 @@ document.addEventListener("keydown", ((e)=>{
 		PlayerCube.userData.physicsBody.getMotionState().setWorldTransform(transform);
 	}), false);
 
+function movePlayerCubeFromDeviceMotion(transformFromDevice){
+	//get the current world location/rotation of player
+	let transform = PlayerCube.userData.physicsBody.getWorldTransform();
+
+	//get current player rotation quaternion from transform
+	var quat = transform.getRotation();//quaternion
+	let pos = transform.getOrigin()//vector
+
+	//create a Quat from the device rotation
+	//let quat_update = createRotationFromAxisAngle(x,y,z,angle,{type:'ammo'}); //return an Ammo quaternion
+
+	//multiply the player quat, by the rotated quat, return a new quat  that is a combination of the two
+	quat = btMultiplyQuaternions(quat,transformFromDevice.quat);
+	pos = btAddVector(pos,transformFromDevice.pos);
+
+	///////:
+	//	https://medium.com/@bluemagnificent/moving-objects-in-javascript-3d-physics-using-ammo-js-and-three-js-6e39eff6d9e5
+	//set player object transform using the new quat and pos
+	transform.setRotation( quat );
+	transform.setOrigin( pos );
+
+	//  https://www.varsitytutors.com/hotmath/hotmath_help/topics/adding-and-subtracting-vectors
+	//Update the motionState with the new WorldTransform
+	PlayerCube.userData.physicsBody.getMotionState().setWorldTransform(transform);
+}
+
 function requestDeviceMotion() {
     // feature detect
     if (typeof DeviceMotionEvent.requestPermission === 'function') {
@@ -867,7 +958,7 @@ function requestDeviceMotion() {
       // handle regular non iOS 13+ devices
     }
   };
-
+/*
   function requestDeviceOrientation() {
     // feature detect
     if (typeof DeviceOrientationEvent.requestPermission === 'function') {
@@ -882,7 +973,7 @@ function requestDeviceMotion() {
       // handle regular non iOS 13+ devices
     }
   }
-
+*/
  
 
 
@@ -890,10 +981,10 @@ var STOP = false;
 var STOP2 = false;
 
 function onDeviceMotion (event){
-	devicemotion_state.set(event);
+	DEVICE_MOTION_STATE.set(event);
 	//Debug code
 	  if(!STOP){
-		console.log(devicemotion_state)
+		console.log(DEVICE_MOTION_STATE)
 		console.log('motion');
 		  console.log(event);
 		  STOP = true;
@@ -921,12 +1012,55 @@ function onDeviceMotion (event){
 }
 
 
-function updateCamera(){
-	//RAYCASTER.setFromCamera( mouse, camera);
+  // Keep acccurate account of real time
+  // the reason is accellerometer and gyro data comes in at
+  // units/second.  the fps for the user can vary
+  // need to sync (best we can without a check, like qr code optical detection)
+  // how much the device has moved
+
+const DEVICE_LOCATION = (function (){
+	// time stamp from previous call, gets updated during use
+	let beforeTime = 0;//Date.now();
+	//let beforeState = false;/// the previous motion state.
+
+	return {getTransform: function (DeviceMotionEvent){
+		// the milliseconds elapsed since the UNIX epoch
+		//const nowTime = Date.now(); 
+		
+		//the miliseconds elapsed since the last DeviceMotionEvent relative to time Origin
+		const nowTime = DeviceMotionEvent.timeStamp;
+		// how many millisecons have elapsed since last call
+		const deltaTime = nowTime - beforeTime;
+		//update beforeTime
+		beforeTime = nowTime;
+	
+		/*
+		/////the device has been moving with beforeState conditions for deltaTime////
+		beforeState includes beforeState.acceleration.x, .y, .z as (meter/sec.) // https://developers.google.com/web/fundamentals/native-hardware/device-orientation#handle_the_device_motion_events
+		beforeState includes beforeState.rotationRate.alpha, .gamma, .beta (degree/sec.)  // https://developers.google.com/web/fundamentals/native-hardware/device-orientation#rotation_data
+		goal is to return a new ammo js vector and quaternion
+		*/
+		const a = DeviceMotionEvent.rotationRate.alpha/deltaTime;
+		const b = DeviceMotionEvent.rotationRate.beta/deltaTime;
+		const g = DeviceMotionEvent.rotationRate.gamma/deltaTime;
+		const acceleration = DeviceMotionEvent.accleration;
+
+		const quat = btGetDeviceMotionStateQuaternion(a,b,g);
+		const pos = btGetDeviceMotionStateVector(acceleration.x,acceleration.y,acceleration.z, deltaTime);
+
+		//return a quaternion and vector that are the new location of device
+		return {quat:quat, pos:pos};
+		}
+	}
+
+})();
+
+function updateCamera (){
 	   //Set the initial perspective for the user
-	   const X = CAMERA_PERSPECTIVE.x();
-	   const Y = CAMERA_PERSPECTIVE.y();
-	   const Z = CAMERA_PERSPECTIVE.z();
+	   //using cam distance constants
+	   const X = CAMERA_PERSPECTIVE.x(); 
+	   const Y = CAMERA_PERSPECTIVE.y(); 
+	   const Z = CAMERA_PERSPECTIVE.z(); 
 	   
 		/*CHASE CAMERA EFFECT*/
 		let relativeCameraOffset = new THREE.Vector3(X,Y,Z);//used to set camera chase distance
@@ -936,7 +1070,8 @@ function updateCamera(){
 		CAMERA.position.z = cameraOffset.z;
 		
 		CAMERA.lookAt( PlayerCube.position );
-}
+	
+};
 
 ////// hide search bar of iOS device
 //     https://stackoverflow.com/questions/10714966/remove-the-url-search-bar-from-android-iphone/14116294
@@ -947,3 +1082,4 @@ window.addEventListener("load",function() {
 	 // window.scrollTo(0, 100);
 	}, 0);
   }); 
+
