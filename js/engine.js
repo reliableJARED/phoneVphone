@@ -1034,7 +1034,7 @@ const DEVICE_LOCATION = (function (){
 		//the miliseconds elapsed since the last DeviceMotionEvent relative to time Origin
 		const nowTime = DeviceMotionEvent.timeStamp;
 		// how many millisecons have elapsed since last call
-		const deltaTime = nowTime - beforeTime;
+		const deltaTime = (nowTime/1000) - (beforeTime/1000);
 		//update beforeTime
 		beforeTime = nowTime;
 		console.log('deltaTime',deltaTime);
