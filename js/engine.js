@@ -917,8 +917,10 @@ window.addEventListener('touchend',((e)=>{
 		 with a gesture BUT not any gesture. click or touchend NOT a touchstart
 		 */
 			//could only be called on a user gesture (e.g. click).
-			requestDeviceMotion();
-			//THIRD arg once:TRUE - only fire this listener once
+			//requestDeviceMotion();
+			requestDeviceOrientation();
+
+	//THIRD arg once:TRUE - only fire this listener once
 	}),{once:true});
 
 
