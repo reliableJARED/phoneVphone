@@ -463,6 +463,8 @@ function initPhysics() {
 
 function updatePhysics( deltaTime ) {
 
+	//update the playercube based on device orientation
+	updatePhysicsObjectFromDevice(PlayerCube);
 // Step world
 /*By default, Bullet physics simulation runs at an internal fixed framerate of 60 Hertz (0.01666) or (60fps). The
 game or application might have a different or even variable framerate. To decouple the application
@@ -472,7 +474,6 @@ interpolate the world transform, and send the interpolated worldtransform to the
 without performing physics simulation. If the application timestep is larger then 60 hertz, more then 1
 simulation step can be performed during each ‘stepSimulation’ call. The user can limit the maximum
 number of simulation steps by passing a maximum value as second argument*/
-
 PHYSICS_WORLD.stepSimulation( deltaTime,10);
 
 // Update rigid bodies
