@@ -76,17 +76,14 @@ const DEVICE_MOTION_STATE = (()=>{
 	state includes state.rotationRate.alpha, .gamma, .beta (degree/sec.)  // https://developers.google.com/web/fundamentals/native-hardware/device-orientation#rotation_data
 	*/
 	let state = false;//false flag is used to determine if state has been acquired yet
-	let btQuat = new Ammo.btQuaternion();
 
 	return  {
 		set: function (e){ 
-			state = e;},
-		get: ()=>{return state},
-		setQuaternion: function(quat){
-			btQuat = quat;
-		},
-		getQuaternion:()=>{return btQuat}
-			
+			state = e;
+			return state},
+		get: function(){ 
+			return state;
+			}
 	};
 })();
 
@@ -462,7 +459,25 @@ function initPhysics() {
 };
 
 function updatePhysics( deltaTime ) {
+	//  https://developers.google.com/web/fundamentals/native-hardware/device-orientation
+	let deviceState = DEVICE_MOTION_STATE.get();
+	
+	let trans = null;
 
+	if(deviceState){
+		//rotationRate is provided in °/sec
+		//let alpha = deviceState.rotationRate.alpha;//get the orientation of phone on Z axis
+		//console.log('alpha',alpha);
+
+		//DEVICE_LOCATION.getTransform returns pos and quat representing where the device is in space
+		let transform = DEVICE_LOCATION.getTransform(deviceState);
+
+		//If the device isn't ready to give location, will be false
+		if(transform){
+		///Get update device about WHERE it actually is
+			movePlayerCubeFromDeviceMotion(transform);
+		}
+	}
 // Step world
 /*By default, Bullet physics simulation runs at an internal fixed framerate of 60 Hertz (0.01666) or (60fps). The
 game or application might have a different or even variable framerate. To decouple the application
@@ -524,7 +539,7 @@ function render() {
 function errorHandler(error) {
 		console.log('here is where it all went wrong ERROR: ', error);
     }
-	
+    
 
     //****** SHOOT A LITTLE CUBE		
 function clickShootCube (event){
@@ -533,20 +548,13 @@ function clickShootCube (event){
     console.log('fire')
     const radius = 0.8;//meters
     var mass = 10;//kg
-	
-	/*
-	var testR = new Ammo.btVector3(1,1,1);
-	console.log(testR);
-
-	var testQ = new Ammo.btQuaternion();
-	console.log(testQ);
-	*/
+    
 
 	var pos =  PlayerCube.position;
 	//use the current position of the player but add 2 to y so it shoots from player 'top'
     pos.addVectors(pos,new THREE.Vector3(0,0,0));
     
-	var quat = new THREE.Quaternion();
+    var quat = new THREE.Quaternion();
     
     //assign random color when creating the new mesh
     const material = new THREE.MeshPhongMaterial({ color: Math.random() * 0xffffff,shininess:100 } );
@@ -605,7 +613,8 @@ function clickShootCube (event){
     
 }
 
-function createPlayerCube(){
+function createPlayerCube(event){
+	console.log(event);
     //PlayerCube is what the other players will see.  However, it's not visible to the local user because it's just behind the field of view
     //need to keep track of its orientation so that when we shoot, it looks like it's coming from the camera
 
@@ -745,7 +754,16 @@ function pitch(){
 }
 */
 
-
+window.addEventListener('touchend',((e)=>{
+	/*****************iPhone
+	 Access to device motion is only granted if it's triggered
+	 with a gesture BUT not any gesture. click or touchend NOT a touchstart
+	 */
+		//could only be called on a user gesture (e.g. click).
+		requestDeviceMotion();
+		requestDeviceOrientation();//ask for orientation permission ios
+		//THIRD arg once:TRUE - only fire this listener once
+}),{once:true});
 
 function btAddVector (ammoVector1, ammoVector2){
 	// https://evanw.github.io/lightgl.js/docs/vector.html
@@ -761,11 +779,6 @@ function btAddVector (ammoVector1, ammoVector2){
 }
 
 function btMultiplyQuaternions(quatA,quatB){
-	/*
-	so this is already in a quaternion
-	btQuaternion.multiplyQuaternions(q1,q2)
-	https://github.com/kripken/ammo.js/blob/a4bec933859e452acd2c18e4152ac2a6a95e806f/ammo.idl#L62
-	*/
 	/////// consider adding this to the ammo.js Quaternion object proto at some point
 
 // from http://www.euclideanspace.com/maths/algebra/realNormedAlgebra/quaternions/code/index.htm
@@ -855,7 +868,6 @@ function createRotationFromAxisAngle(xx,yy,zz,a,options){
 	//return quat.normalize();
 };
 
-/////// EVENT LISTENERS ////////////
 //FIRE A SHOUT WITH 
 window.addEventListener('touchstart',((e)=>{
 
@@ -910,27 +922,6 @@ document.addEventListener("keydown", ((e)=>{
 		PlayerCube.userData.physicsBody.getMotionState().setWorldTransform(transform);
 	}), false);
 
-window.addEventListener('touchend',((e)=>{
-		/*****************iPhone
-		 Access to device motion is only granted if it's triggered
-		 with a gesture BUT not any gesture. click or touchend NOT a touchstart
-		 */
-			//could only be called on a user gesture (e.g. click).
-			requestDeviceMotion();
-			//THIRD arg once:TRUE - only fire this listener once
-	}),{once:true});
-
-
-////// hide search bar of iOS device
-//     https://stackoverflow.com/questions/10714966/remove-the-url-search-bar-from-android-iphone/14116294
-window.addEventListener("load",function() {
-	// Set a timeout...
-	setTimeout(function(){
-	  // Hide the address bar! - this needs work, must coordinate with canvas/video size comment out for now
-	 // window.scrollTo(0, 100);
-	}, 0);
-  }); 
-
 function movePlayerCubeFromDeviceMotion(transformFromDevice){
 	//get the current world location/rotation of player
 	let transform = PlayerCube.userData.physicsBody.getWorldTransform();
@@ -960,26 +951,10 @@ function movePlayerCubeFromDeviceMotion(transformFromDevice){
 function requestDeviceMotion() {
     // feature detect
     if (typeof DeviceMotionEvent.requestPermission === 'function') {
-		//get permission to use device motion
       DeviceMotionEvent.requestPermission()
         .then(permissionState => {
-			//permission is granted
           if (permissionState === 'granted') {
-
-			//INITIAL ORIENTATION - associate current player position with start of device
-			const transform = PlayerCube.userData.physicsBody.getWorldTransform();
-
-			//get current player rotation quaternion from transform
-			const quat = transform.getRotation();
-
-			DEVICE_MOTION_STATE.setQuaternion(quat);
-
-			  
-			  //hook up listener callback
-			window.addEventListener('devicemotion', onDeviceMotion);
-			//switch to devicemotion controller
-			//  https://jsfiddle.net/f2Lommf5/4023/
-			//CONTROLS = new THREE.DeviceOrientationControls( CAMERA );
+            window.addEventListener('devicemotion', onDeviceMotion);
           }
         })
         .catch(console.error);
@@ -987,79 +962,110 @@ function requestDeviceMotion() {
       // handle regular non iOS 13+ devices
     }
   };
+/*
+  function requestDeviceOrientation() {
+    // feature detect
+    if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+      DeviceOrientationEvent.requestPermission()
+        .then(permissionState => {
+          if (permissionState === 'granted') {
+            window.addEventListener('deviceorientation', onDeviceOrientation);
+          }
+        })
+        .catch(console.error);
+    } else {
+      // handle regular non iOS 13+ devices
+    }
+  }
+*/
+ 
+
+
+var STOP = false;
+var STOP2 = false;
 
 function onDeviceMotion (event){
 	DEVICE_MOTION_STATE.set(event);
+	//Debug code
+	  if(!STOP){
+		console.log(DEVICE_MOTION_STATE)
+		console.log('motion');
+		  console.log(event);
+		  STOP = true;
+	  }
+	  
   }
 
+  function onDeviceOrientation (event){
+	  /// good resource
+	  /*  
+	  https://developers.google.com/web/fundamentals/native-hardware/device-orientation
+	  https://developer.apple.com/documentation/coremotion/getting_processed_device-motion_data/understanding_reference_frames_and_device_attitude
+	  */
+	 
+	  if(!STOP){
+		console.log('orientation');
+		  console.log(event);
+		  STOP2 = true;
+	  }
 
-function updatePhysicsObjectFromDevice(obj){
-		//  https://developers.google.com/web/fundamentals/native-hardware/device-orientation
-		//DEVICE_MOTION_STATE is the current orientation/position of the device
-		let deviceState = DEVICE_MOTION_STATE.get();
 
-		/// Alteration of threejs Device Orientation Controls
-		//  https://github.com/mrdoob/three.js/blob/dev/examples/jsm/controls/DeviceOrientationControls.js
-		if ( deviceState ) {
+	//ROTATE PlayerCube --- PHYSICS
 
-			const degToRad = Math.PI/180;//conversion factor
-			const deviceRotation = deviceState.rotationRate; //alpha,beta, gamma quaternion components
 
-			var alpha = deviceRotation.alpha ? degToRad * deviceRotation.alpha  : 0; // Z
-
-			var beta = deviceRotation.beta ? degToRad * deviceRotation.beta : 0; // X'
-
-			var gamma = deviceRotation.gamma ? degToRad * deviceRotation.gamma : 0; // Y''
-
-			//NO CORRECTION SETUP FOR DEVICE SCREEN ORIENTATION CHANGE
-			//var orient = 0; //scope.screenOrientation ? MathUtils.degToRad( scope.screenOrientation ) : 0; // O
-			
-			//OBJECT Orientation
-			//get the world location/rotation of player
-			let transform = obj.userData.physicsBody.getWorldTransform();
-
-			//get quaternion from transform
-			var quat = transform.getRotation();
-			//create a new quat from device orientation data
-			quat = setObjectQuaternion( quat, alpha, beta, gamma );
-			//update the transform
-			transform.setRotation(quat);
-			//update the obj transform
-			obj.userData.physicsBody.getMotionState().setWorldTransform(transform);
-
-			DEVICE_MOTION_STAT.setQuaternion(quat);	
-
-		}
 }
 
-// The angles alpha, beta and gamma form a set of intrinsic Tait-Bryan angles of type Z-X'-Y''
 
-const setObjectQuaternion = function () {
+  // Keep acccurate account of real time
+  // the reason is accellerometer and gyro data comes in at
+  // units/second.  the fps for the user can vary
+  // need to sync (best we can without a check, like qr code optical detection)
+  // how much the device has moved
 
-	var q1 = new Ammo.btQuaternion( - Math.sqrt( 0.5 ), 0, 0, Math.sqrt( 0.5 ) ); // - PI/2 around the x-axis
+const DEVICE_LOCATION = (function (){
+	// time stamp from previous call, gets updated during use
+	let beforeTime = 0;//Date.now();
+	//let beforeState = false;/// the previous motion state.
 
-	return function ( quaternion, alpha, beta, gamma ) {
-
-		//euler.set( beta, alpha, - gamma, 'YXZ' ); 
-
-		quaternion.setEulerZYX( gamma,alpha,beta ); // 'ZXY' for the device, but 'ZYX' for Ammo - X and Y are reverse in Ammo
-		/// ZXY(iPhone) and ZYX(ammo) seem the same:
+	return {getTransform: function (DeviceMotionEvent){
+		// the milliseconds elapsed since the UNIX epoch
+		//const nowTime = Date.now(); 
+		
+		//the miliseconds elapsed since the last DeviceMotionEvent relative to time Origin
+		const nowTime = DeviceMotionEvent.timeStamp;
+		// how many millisecons have elapsed since last call
+		const deltaTime = (nowTime/1000) - (beforeTime/1000);
+		//update beforeTime
+		beforeTime = nowTime;
+		console.log('deltaTime',deltaTime);
+	
 		/*
-		https://pybullet.org/Bullet/BulletFull/classbtQuaternion.html#adf15384cff65f630b0537f1b8aeee622
-		https://developer.apple.com/documentation/coremotion/getting_processed_device-motion_data/understanding_reference_frames_and_device_attitude
+		/////the device has been moving with beforeState conditions for deltaTime////
+		beforeState includes beforeState.acceleration.x, .y, .z as (meter/sec.) // https://developers.google.com/web/fundamentals/native-hardware/device-orientation#handle_the_device_motion_events
+		beforeState includes beforeState.rotationRate.alpha, .gamma, .beta (degree/sec.)  // https://developers.google.com/web/fundamentals/native-hardware/device-orientation#rotation_data
+		goal is to return a new ammo js vector and quaternion
 		*/
+		const a = DeviceMotionEvent.rotationRate.alpha/deltaTime;
+		const b = DeviceMotionEvent.rotationRate.beta/deltaTime;
+		const g = DeviceMotionEvent.rotationRate.gamma/deltaTime;
+		const acceleration = DeviceMotionEvent.acceleration;
 
-		quaternion = btMultiplyQuaternions( quaternion,q1 ); // camera looks out the back of the device, not the top
+		const quat = btGetDeviceMotionStateQuaternion(a,b,g);
+		const pos = btGetDeviceMotionStateVector(acceleration.x,acceleration.y,acceleration.z, deltaTime);
 
-		//NOT HOOKED UP
-		axisQuat = createRotationFromAxisAngle(0,0,1,0,{type:'ammo'}); // adjust for screen orientation
-		quaternion = btMultiplyQuaternions( quaternion,axisQuat ); 
+		console.log(quat, pos);
 
-		return quaternion;
+		// need to make sure time stamp is accurate
+		if(deltaTime >0){
+		//return a quaternion and vector that are the new location of device
+			return {quat:quat, pos:pos};
+		}else{
+			return false;
+		}
+		}
+	}
 
-	};
-
-}();
+})();
 
 function updateCamera (){
 	   //Set the initial perspective for the user
@@ -1079,5 +1085,13 @@ function updateCamera (){
 	
 };
 
-
+////// hide search bar of iOS device
+//     https://stackoverflow.com/questions/10714966/remove-the-url-search-bar-from-android-iphone/14116294
+window.addEventListener("load",function() {
+	// Set a timeout...
+	setTimeout(function(){
+	  // Hide the address bar! - this needs work, must coordinate with canvas/video size comment out for now
+	 // window.scrollTo(0, 100);
+	}, 0);
+  }); 
 
