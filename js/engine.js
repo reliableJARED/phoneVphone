@@ -1028,7 +1028,7 @@ function updatePhysicsObjectFromDevice(obj){
 			//update the obj transform
 			obj.userData.physicsBody.getMotionState().setWorldTransform(transform);
 
-			DEVICE_MOTION_STAT.setQuaternion(quat);	
+			DEVICE_MOTION_STATE.setQuaternion(quat);	
 
 		}
 }
