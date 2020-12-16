@@ -957,7 +957,7 @@ function movePlayerCubeFromDeviceMotion(transformFromDevice){
 	//Update the motionState with the new WorldTransform
 	PlayerCube.userData.physicsBody.getMotionState().setWorldTransform(transform);
 }
-
+/*
 function requestDeviceMotion() {
     // feature detect
     if (typeof DeviceMotionEvent.requestPermission === 'function') {
@@ -988,9 +988,44 @@ function requestDeviceMotion() {
       // handle regular non iOS 13+ devices
     }
   };
+*/
 
+  
+  function requestDeviceOrientation() {
+    // feature detect
+    if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+      DeviceOrientationEvent.requestPermission()
+        .then(permissionState => {
+          if (permissionState === 'granted') {
+
+			//INITIAL ORIENTATION - associate current player position with start of device
+			const transform = PlayerCube.userData.physicsBody.getWorldTransform();
+
+			//get current player rotation quaternion from transform
+			const quat = transform.getRotation();
+
+			DEVICE_MOTION_STATE.setQuaternion(quat);
+
+			  
+            window.addEventListener('deviceorientation', onDeviceMotion);
+          }
+        })
+        .catch(console.error);
+    } else {
+      // handle regular non iOS 13+ devices
+    }
+  }
+
+  var STOP = false;
 function onDeviceMotion (event){
 	DEVICE_MOTION_STATE.set(event);
+	//Debug code
+	if(!STOP){
+		console.log(DEVICE_MOTION_STATE)
+		console.log('motion');
+		  console.log(event);
+		  STOP = true;
+	  }
   }
 
 
