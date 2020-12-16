@@ -1041,7 +1041,7 @@ function updatePhysicsObjectFromDevice(obj){
 		if ( deviceState ) {
 
 			const degToRad = Math.PI/180;//conversion factor
-			const deviceRotation = deviceState.rotationRate; //alpha,beta, gamma quaternion components
+			const deviceRotation = deviceState;//.rotationRate; //alpha,beta, gamma quaternion components
 
 			var alpha = deviceRotation.alpha ? degToRad * deviceRotation.alpha  : 0; // Z
 
